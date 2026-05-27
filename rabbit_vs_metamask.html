@@ -1,0 +1,654 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbit Wallet vs MetaMask - Features Comparison</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .toggle-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .toggle-btn {
+            padding: 10px 20px;
+            border: 2px solid white;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn.active {
+            background: white;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .feature-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .wallet-info {
+            margin-bottom: 15px;
+        }
+        
+        .wallet-label {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .wallet-value {
+            color: #555;
+            line-height: 1.5;
+            font-size: 0.95em;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .status-yes {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-no {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-partial {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .table-view {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .table-view.active {
+            display: block;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .feature-col {
+            font-weight: 600;
+            color: #333;
+            width: 30%;
+        }
+        
+        .rabbit-col, .metamask-col {
+            width: 35%;
+        }
+        
+        .comparison-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .comparison-view.active {
+            display: grid;
+        }
+        
+        .comparison-view:not(.active) {
+            display: none;
+        }
+        
+        .wallet-column {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .wallet-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .wallet-header.rabbit {
+            color: #ff6b6b;
+            border-bottom-color: #ff6b6b;
+        }
+        
+        .wallet-header.metamask {
+            color: #f6851b;
+            border-bottom-color: #f6851b;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .check-icon {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+        
+        .cross-icon {
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+        
+        .feature-text {
+            flex: 1;
+        }
+        
+        .feature-text strong {
+            color: #333;
+            display: block;
+            margin-bottom: 3px;
+        }
+        
+        .feature-text small {
+            color: #777;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-view {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💼 Wallet Comparison</h1>
+            <p class="subtitle">Rabbit Wallet vs MetaMask - Interactive Features Comparison</p>
+        </header>
+        
+        <div class="toggle-container">
+            <button class="toggle-btn active" onclick="showView('grid')">Grid View</button>
+            <button class="toggle-btn" onclick="showView('table')">Table View</button>
+            <button class="toggle-btn" onclick="showView('comparison')">Side by Side</button>
+        </div>
+        
+        <!-- GRID VIEW -->
+        <div id="grid-view" class="comparison-grid active">
+            <div class="feature-card">
+                <div class="feature-name">🔐 Security</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">Hardware wallet integration, biometric auth, self-custodial</div>
+                    <span class="status-badge status-yes">✓ Excellent</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">Strong encryption, seed phrase backup, browser extension security</div>
+                    <span class="status-badge status-yes">✓ Excellent</span>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-name">🌐 Blockchain Support</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">Solana, Ethereum, Bitcoin, Polygon, Arbitrum</div>
+                    <span class="status-badge status-yes">✓ Multi-chain</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">Ethereum, Polygon, Arbitrum, Optimism, Avalanche, BSC</div>
+                    <span class="status-badge status-yes">✓ Multi-chain</span>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-name">📱 Platform Availability</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">Mobile (iOS/Android), Web, Desktop</div>
+                    <span class="status-badge status-yes">✓ Cross-platform</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">Browser extension, Mobile (iOS/Android), Web</div>
+                    <span class="status-badge status-yes">✓ Cross-platform</span>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-name">💰 Token Support</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">SPL tokens, ERC-20, Native tokens across chains</div>
+                    <span class="status-badge status-yes">✓ Extensive</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">ERC-20, ERC-721, ERC-1155, custom tokens</div>
+                    <span class="status-badge status-yes">✓ Extensive</span>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-name">🔄 DApp Integration</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">Solana ecosystem, Web3 dApps, DEX integration</div>
+                    <span class="status-badge status-yes">✓ Strong</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">Ethereum ecosystem, Uniswap, OpenSea, extensive dApp support</div>
+                    <span class="status-badge status-yes">✓ Very Strong</span>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-name">💱 Built-in Swap</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">Native token swap functionality</div>
+                    <span class="status-badge status-yes">✓ Yes</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">MetaMask Swaps with aggregator</div>
+                    <span class="status-badge status-yes">✓ Yes</span>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-name">👤 User Interface</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">Modern, clean, mobile-first design</div>
+                    <span class="status-badge status-yes">✓ Intuitive</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">Familiar, browser-native, well-established UX</div>
+                    <span class="status-badge status-yes">✓ Intuitive</span>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-name">🎯 Target Audience</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">Solana users, mobile-first traders</div>
+                    <span class="status-badge status-partial">→ Niche</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">Ethereum ecosystem, mainstream users</div>
+                    <span class="status-badge status-yes">✓ Mainstream</span>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-name">🔑 Key Management</div>
+                <div class="wallet-info">
+                    <div class="wallet-label">Rabbit Wallet</div>
+                    <div class="wallet-value">Seed phrase, hardware wallet support, secure enclave</div>
+                    <span class="status-badge status-yes">✓ Advanced</span>
+                </div>
+                <div class="wallet-info">
+                    <div class="wallet-label">MetaMask</div>
+                    <div class="wallet-value">Seed phrase, hardware wallet support via Ledger/Trezor</div>
+                    <span class="status-badge status-yes">✓ Advanced</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TABLE VIEW -->
+        <div id="table-view" class="table-view">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Rabbit Wallet</th>
+                        <th>MetaMask</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="feature-col"><strong>Security</strong></td>
+                        <td class="rabbit-col">Hardware integration, Biometric, Self-custodial</td>
+                        <td class="metamask-col">Strong encryption, Seed phrase, Browser security</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>Blockchain Support</strong></td>
+                        <td class="rabbit-col">Solana, Ethereum, Bitcoin, Polygon, Arbitrum</td>
+                        <td class="metamask-col">Ethereum, Polygon, Arbitrum, Optimism, Avalanche, BSC</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>Platforms</strong></td>
+                        <td class="rabbit-col">Mobile, Web, Desktop</td>
+                        <td class="metamask-col">Browser Extension, Mobile, Web</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>Token Support</strong></td>
+                        <td class="rabbit-col">SPL, ERC-20, Native tokens</td>
+                        <td class="metamask-col">ERC-20, ERC-721, ERC-1155, Custom</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>DApp Integration</strong></td>
+                        <td class="rabbit-col">Solana ecosystem, Web3 dApps</td>
+                        <td class="metamask-col">Ethereum ecosystem, Extensive dApp support</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>Built-in Swap</strong></td>
+                        <td class="rabbit-col">✓ Yes</td>
+                        <td class="metamask-col">✓ Yes (with aggregator)</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>User Interface</strong></td>
+                        <td class="rabbit-col">Modern, Mobile-first</td>
+                        <td class="metamask-col">Familiar, Browser-native</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>Target Audience</strong></td>
+                        <td class="rabbit-col">Solana users, Mobile traders</td>
+                        <td class="metamask-col">Ethereum users, Mainstream</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>Hardware Wallet</strong></td>
+                        <td class="rabbit-col">✓ Yes</td>
+                        <td class="metamask-col">✓ Yes (Ledger, Trezor)</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-col"><strong>Fee Estimation</strong></td>
+                        <td class="rabbit-col">✓ Real-time</td>
+                        <td class="metamask-col">✓ Real-time</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- SIDE BY SIDE VIEW -->
+        <div id="comparison-view" class="comparison-view">
+            <div class="wallet-column">
+                <div class="wallet-header rabbit">🐰 Rabbit Wallet</div>
+                <ul class="feature-list">
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Multi-chain Support</strong>
+                            <small>Solana, Ethereum, Bitcoin, Polygon, Arbitrum</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Mobile-First Design</strong>
+                            <small>Optimized for iOS and Android</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Biometric Authentication</strong>
+                            <small>Fingerprint and face recognition</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Hardware Wallet Integration</strong>
+                            <small>Support for external security devices</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Built-in Swap</strong>
+                            <small>Native token exchange</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Solana Ecosystem</strong>
+                            <small>Deep integration with Solana dApps</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="cross-icon">✗</span>
+                        <div class="feature-text">
+                            <strong>Browser Extension</strong>
+                            <small>Not available as browser extension</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="cross-icon">✗</span>
+                        <div class="feature-text">
+                            <strong>Mainstream Adoption</strong>
+                            <small>Smaller user base compared to MetaMask</small>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="wallet-column">
+                <div class="wallet-header metamask">🦊 MetaMask</div>
+                <ul class="feature-list">
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Browser Extension</strong>
+                            <small>Chrome, Firefox, Edge, Brave support</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Mainstream Adoption</strong>
+                            <small>Largest user base in Web3</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Multi-chain Support</strong>
+                            <small>EVM-compatible chains (Ethereum, Polygon, Arbitrum, etc.)</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Hardware Wallet Support</strong>
+                            <small>Ledger, Trezor, Lattice integration</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>MetaMask Swaps</strong>
+                            <small>DEX aggregator with best rates</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Extensive DApp Support</strong>
+                            <small>Works with thousands of Ethereum dApps</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">✓</span>
+                        <div class="feature-text">
+                            <strong>Mobile App</strong>
+                            <small>Full-featured iOS and Android apps</small>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="cross-icon">✗</span>
+                        <div class="feature-text">
+                            <strong>Solana Native Support</strong>
+                            <small>Limited Solana integration</small>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showView(view) {
+            // Hide all views
+            document.getElementById('grid-view').classList.remove('active');
+            document.getElementById('table-view').classList.remove('active');
+            document.getElementById('comparison-view').classList.remove('active');
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected view
+            if (view === 'grid') {
+                document.getElementById('grid-view').classList.add('active');
+            } else if (view === 'table') {
+                document.getElementById('table-view').classList.add('active');
+            } else if (view === 'comparison') {
+                document.getElementById('comparison-view').classList.add('active');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

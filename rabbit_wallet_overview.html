@@ -1,0 +1,443 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabby Wallet - Interactive Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tabs button {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        
+        .nav-tabs button:hover {
+            background: #e8e8e8;
+        }
+        
+        .nav-tabs button.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            background: white;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        h3 {
+            color: #764ba2;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .feature-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .step-list {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+        
+        .step-list li {
+            counter-increment: step-counter;
+            margin-bottom: 15px;
+            padding-left: 40px;
+            position: relative;
+        }
+        
+        .step-list li:before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        .security-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 0.9em;
+        }
+        
+        footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐰 Rabby Wallet</h1>
+            <p>Your Gateway to Web3 Security and Simplicity</p>
+        </header>
+        
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+            <button class="tab-btn" onclick="showTab('features')">Features</button>
+            <button class="tab-btn" onclick="showTab('security')">Security</button>
+            <button class="tab-btn" onclick="showTab('getting-started')">Getting Started</button>
+            <button class="tab-btn" onclick="showTab('faq')">FAQ</button>
+        </div>
+        
+        <div class="content">
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <h2>What is Rabby Wallet?</h2>
+                <p>Rabby Wallet is a browser extension wallet designed for Web3 users who want security, simplicity, and control. It's built to protect users from common Web3 risks while making blockchain interactions seamless.</p>
+                
+                <h3>Quick Facts</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🌐 Multi-Chain Support</h4>
+                        <p>Works with Ethereum, BSC, Polygon, Arbitrum, Optimism, and 50+ other chains</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔐 Non-Custodial</h4>
+                        <p>You control your private keys. Rabby never has access to your funds</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⚡ Fast & Lightweight</h4>
+                        <p>Minimal resource usage, quick transaction processing</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🛡️ Risk Detection</h4>
+                        <p>Automatically detects and warns about suspicious transactions</p>
+                    </div>
+                </div>
+                
+                <div class="highlight">
+                    <strong>💡 Key Insight:</strong> Rabby is developed by Defi Labs and is completely open-source, allowing the community to audit and verify its security.
+                </div>
+            </div>
+            
+            <!-- Features Tab -->
+            <div id="features" class="tab-content">
+                <h2>Core Features</h2>
+                
+                <h3>1. Transaction Simulation & Risk Detection</h3>
+                <p>Before you sign any transaction, Rabby simulates it to show you exactly what will happen. It detects:</p>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li>Phishing attempts</li>
+                    <li>Suspicious token approvals</li>
+                    <li>Malicious smart contracts</li>
+                    <li>Unusual fund transfers</li>
+                </ul>
+                
+                <h3>2. Token Approval Management</h3>
+                <p>See all your token approvals across all chains and revoke them with one click. This prevents hacks from compromised contracts.</p>
+                
+                <h3>3. Multi-Signature Support</h3>
+                <p>Connect hardware wallets (Ledger, Trezor) for enhanced security on high-value transactions.</p>
+                
+                <h3>4. NFT Gallery</h3>
+                <p>View and manage your NFT collection directly in the wallet with beautiful previews.</p>
+                
+                <h3>5. DeFi Dashboard</h3>
+                <p>Monitor your positions, yields, and portfolio performance across multiple protocols.</p>
+                
+                <h3>6. Custom RPC Support</h3>
+                <p>Add custom RPC endpoints for any EVM-compatible chain.</p>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🔄 Batch Transactions</h4>
+                        <p>Execute multiple transactions in one go</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📊 Portfolio Tracking</h4>
+                        <p>Real-time value tracking across all assets</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🌙 Dark Mode</h4>
+                        <p>Easy on the eyes for extended use</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Tab -->
+            <div id="security" class="tab-content">
+                <h2>Security Features</h2>
+                
+                <h3>Why Rabby is Secure</h3>
+                <p>Rabby implements multiple layers of protection:</p>
+                
+                <div class="security-badge">✓ Open Source</div>
+                <div class="security-badge">✓ No Seed Phrase Storage</div>
+                <div class="security-badge">✓ Local Encryption</div>
+                <div class="security-badge">✓ Hardware Wallet Support</div>
+                <div class="security-badge">✓ Transaction Simulation</div>
+                <div class="security-badge">✓ Regular Audits</div>
+                
+                <h3>Transaction Security Flow</h3>
+                <ol class="step-list">
+                    <li><strong>Detection:</strong> Rabby analyzes the transaction before you sign</li>
+                    <li><strong>Simulation:</strong> Runs the transaction in a sandbox environment</li>
+                    <li><strong>Analysis:</strong> Checks for known attack patterns</li>
+                    <li><strong>Warning:</strong> Alerts you to any risks found</li>
+                    <li><strong>Control:</strong> You decide whether to proceed</li>
+                </ol>
+                
+                <h3>Protection Against Common Attacks</h3>
+                <table class="comparison-table">
+                    <tr>
+                        <th>Attack Type</th>
+                        <th>Rabby Protection</th>
+                    </tr>
+                    <tr>
+                        <td>Phishing Sites</td>
+                        <td>Domain verification & warnings</td>
+                    </tr>
+                    <tr>
+                        <td>Malicious Approvals</td>
+                        <td>Approval limit detection</td>
+                    </tr>
+                    <tr>
+                        <td>Rug Pulls</td>
+                        <td>Contract analysis & warnings</td>
+                    </tr>
+                    <tr>
+                        <td>Fake Tokens</td>
+                        <td>Token verification system</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Getting Started Tab -->
+            <div id="getting-started" class="tab-content">
+                <h2>How to Get Started</h2>
+                
+                <h3>Installation</h3>
+                <ol class="step-list">
+                    <li>Visit the Chrome Web Store or Firefox Add-ons</li>
+                    <li>Search for "Rabby Wallet"</li>
+                    <li>Click "Add to Chrome" or "Add to Firefox"</li>
+                    <li>The extension will appear in your browser toolbar</li>
+                </ol>
+                
+                <h3>Creating Your First Wallet</h3>
+                <ol class="step-list">
+                    <li>Click the Rabby icon in your toolbar</li>
+                    <li>Choose "Create New Wallet"</li>
+                    <li>Write down your 12-word seed phrase (keep it safe!)</li>
+                    <li>Confirm your seed phrase</li>
+                    <li>Set a strong password</li>
+                    <li>You're ready to go!</li>
+                </ol>
+                
+                <h3>Importing Existing Wallet</h3>
+                <ol class="step-list">
+                    <li>Click "Import Wallet"</li>
+                    <li>Paste your 12 or 24-word seed phrase</li>
+                    <li>Set a password</li>
+                    <li>Your accounts will be restored</li>
+                </ol>
+                
+                <div class="highlight">
+                    <strong>⚠️ Important:</strong> Never share your seed phrase with anyone. Rabby staff will never ask for it. Anyone with your seed phrase can access all your funds.
+                </div>
+            </div>
+            
+            <!-- FAQ Tab -->
+            <div id="faq" class="tab-content">
+                <h2>Frequently Asked Questions</h2>
+                
+                <h3>Is Rabby Wallet free?</h3>
+                <p>Yes, Rabby Wallet is completely free. There are no hidden fees or premium tiers.</p>
+                
+                <h3>Can I use Rabby on mobile?</h3>
+                <p>Currently, Rabby is available as a browser extension (Chrome, Firefox, Edge). Mobile support is in development.</p>
+                
+                <h3>What happens if I lose my seed phrase?</h3>
+                <p>Your funds cannot be recovered without your seed phrase. Store it securely in multiple locations (paper, safe, etc.).</p>
+                
+                <h3>Is my private key stored on Rabby servers?</h3>
+                <p>No. Your private keys are encrypted and stored only on your device. Rabby never has access to them.</p>
+                
+                <h3>Can I connect multiple wallets?</h3>
+                <p>Yes, you can import multiple seed phrases or add hardware wallets to the same extension.</p>
+                
+                <h3>How do I report a security issue?</h3>
+                <p>Contact the Rabby team through their official GitHub or security email. Do not share details publicly.</p>
+                
+                <h3>Which chains does Rabby support?</h3>
+                <p>Rabby supports 50+ EVM-compatible chains including Ethereum, Polygon, Arbitrum, Optimism, BSC, Avalanche, and more.</p>
+                
+                <h3>Can I use Rabby with DeFi protocols?</h3>
+                <p>Yes! Rabby is designed for DeFi users. It works with Uniswap, Aave, Curve, and thousands of other protocols.</p>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Rabby Wallet - Secure, Simple, and Powerful Web3 Wallet</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Always verify you're on the official website before entering sensitive information</p>
+        </footer>
+    </div>
+    
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
