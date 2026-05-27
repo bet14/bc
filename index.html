@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabby Wallet - Fraud Detection Features</title>
+  <style>
+    :root{
+      --bg1:#07111f;
+      --bg2:#0b1728;
+      --bg3:#111c31;
+
+      --text:#e5eefc;
+      --muted:#94a3b8;
+      --border:rgba(148,163,184,.18);
+      --shadow:0 14px 40px rgba(0, 0, 0, .35);
+
+      --class1:#0f2747;
+      --class2:#12345f;
+      --lab1:#0d2b28;
+      --lab2:#123f39;
+      --misc1:#2a1834;
+      --misc2:#3a1f46;
+
+      --class-border:#60a5fa;
+      --lab-border:#34d399;
+      --misc-border:#f472b6;
+
+      --link:#eaf2ff;
+      --link-muted:#b7c5db;
+      --hover:rgba(255,255,255,.06);
+
+      --btn-bg:rgba(15, 23, 42, .72);
+      --btn-bg-hover:rgba(30, 41, 59, .92);
+      --btn-border:rgba(148,163,184,.22);
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(96,165,250,.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(52,211,153,.14), transparent 26%),
+        radial-gradient(circle at bottom center, rgba(244,114,182,.10), transparent 30%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 52%, var(--bg3) 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+
+    .container{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 18px 14px 28px;
+    }
+
+    .header{
+      position: relative;
+      overflow:hidden;
+      background: linear-gradient(135deg, rgba(15, 23, 42, .82), rgba(17, 24, 39, .88));
+      border:1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      backdrop-filter: blur(10px);
+    }
+
+    .header::after{
+      content:"";
+      position:absolute;
+      inset:auto -40px -60px auto;
+      width:200px;
+      height:200px;
+      border-radius:50%;
+      background: radial-gradient(circle, rgba(59,130,246,.18), transparent 68%);
+      pointer-events:none;
+    }
+
+    h1{
+      margin:0 0 6px;
+      font-size: 26px;
+      line-height: 1.2;
+      color:#f8fbff;
+      letter-spacing: .2px;
+    }
+
+    .subtitle{
+      margin:0;
+      color:var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .legend{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      border:1px solid transparent;
+      letter-spacing:.2px;
+    }
+
+    .tag::before{
+      content:"";
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      display:inline-block;
+      background: currentColor;
+    }
+
+    .tag.class{
+      background: rgba(96,165,250,.14);
+      color:#93c5fd;
+      border-color: rgba(96,165,250,.25);
+    }
+    .tag.lab{
+      background: rgba(52,211,153,.12);
+      color:#6ee7b7;
+      border-color: rgba(52,211,153,.22);
+    }
+    .tag.misc{
+      background: rgba(244,114,182,.12);
+      color:#f9a8d4;
+      border-color: rgba(244,114,182,.22);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+      align-items:start;
+    }
+
+    .col{
+      background: rgba(15, 23, 42, .72);
+      border:1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .col-header{
+      padding:12px 14px;
+      font-size:15px;
+      font-weight:800;
+      color:#f8fbff;
+      border-bottom:1px solid rgba(148,163,184,.15);
+      letter-spacing:.2px;
+    }
+
+    .col-header.class{
+      background: linear-gradient(135deg, var(--class1), var(--class2));
+    }
+    .col-header.lab{
+      background: linear-gradient(135deg, var(--lab1), var(--lab2));
+    }
+    .col-header.misc{
+      background: linear-gradient(135deg, var(--misc1), var(--misc2));
+    }
+
+    .links{
+      list-style:none;
+      padding:10px;
+      margin:0;
+    }
+
+    .links li{margin:0}
+
+    .links a{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 13px;
+      margin:8px 0;
+      text-decoration:none;
+      color:var(--link);
+      border:1px solid var(--btn-border);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, .88), rgba(15, 23, 42, .66));
+      transition: .2s ease;
+      line-height:1.25;
+      font-weight:700;
+      font-size:13px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.18);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .links a::after{
+      content:"→";
+      color:var(--link-muted);
+      font-weight:800;
+      transition:.2s ease;
+      flex:0 0 auto;
+    }
+
+    .links a:hover{
+      transform: translateY(-2px);
+      background: var(--btn-bg-hover);
+      border-color: rgba(148,163,184,.38);
+      box-shadow: 0 10px 24px rgba(0,0,0,.28);
+    }
+
+    .links a:hover::after{
+      color:#ffffff;
+      transform: translateX(2px);
+    }
+
+    .links a:active{
+      transform: translateY(0);
+    }
+
+    .links a:focus-visible{
+      outline:2px solid rgba(96,165,250,.75);
+      outline-offset:2px;
+    }
+
+    .small{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:500;
+      display:block;
+      margin-top:3px;
+    }
+
+    @media (max-width: 1100px){
+      .grid{grid-template-columns: repeat(2, minmax(0, 1fr))}
+    }
+    @media (max-width: 720px){
+      .grid{grid-template-columns: 1fr}
+      h1{font-size:22px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Rabby Wallet - Fraud Detection Features</h1>
+      <p class="subtitle">Security-focused wallet with advanced fraud detection capabilities</p>
+      <div class="legend">
+        <span class="tag class">Overview</span>
+        <span class="tag lab">Features</span>
+        <span class="tag misc">Comparison</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- OVERVIEW -->
+      <div class="col">
+        <div class="col-header class">Overview</div>
+        <ul class="links">
+          <li><a href="rabbit_wallet_overview.html">Rabby Wallet Overview</a></li>
+          <li><a href="rabby_fraud_detection.html">Fraud Detection Features</a></li>
+        </ul>
+      </div>
+
+      <!-- FEATURES -->
+      <div class="col">
+        <div class="col-header lab">Features in details</div>
+        <ul class="links">
+
+
+        </ul>
+      </div>
+
+      <!-- COMPARISON -->
+      <div class="col">
+        <div class="col-header misc">Comparison</div>
+        <ul class="links">
+          <li><a href="rabbit_vs_metamask.html">Rabby vs MetaMask</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
