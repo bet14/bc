@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabby Wallet - Fraud Detection Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --surface-2: #f1f5f9;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --green: #10b981;
+      --green-dark: #059669;
+      --blue: #3b82f6;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --shadow: 0 20px 60px rgba(15, 23, 42, 0.09);
+      --soft-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    body.dark {
+      color-scheme: dark;
+      --bg: #0b1220;
+      --surface: #1f2937;
+      --surface-2: #111827;
+      --ink: #f9fafb;
+      --muted: #9ca3af;
+      --line: rgba(156, 163, 175, 0.18);
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
+      --soft-shadow: 0 12px 32px rgba(0, 0, 0, 0.26);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(16, 185, 129, 0.2), transparent 24rem),
+        radial-gradient(circle at 92% 18%, rgba(59, 130, 246, 0.18), transparent 26rem),
+        var(--bg);
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .slide {
+      width: 100vw;
+      height: 100vh;
+      display: none;
+      padding: 40px 40px 40px 300px; /* chừa chỗ cho mục lục trái */
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      animation: fadeIn 0.35s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-content {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 40px;
+      flex: 1;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      background: linear-gradient(135deg, var(--blue), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: clamp(2rem, 4vw, 3rem);
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      color: var(--blue);
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      margin-bottom: 18px;
+      border-bottom: 3px solid var(--blue);
+      padding-bottom: 8px;
+    }
+
+    h3 { color: var(--ink); font-size: 1.15rem; margin: 14px 0 8px; }
+
+    p.lead { font-size: 1.08rem; color: var(--muted); margin-bottom: 20px; }
+
+    .demo-box {
+      background: var(--surface-2);
+      border-radius: 14px;
+      padding: 18px;
+      margin: 18px 0;
+      border-left: 4px solid var(--blue);
+    }
+
+    .btn-group { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+
+    .btn {
+      padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer;
+      font-size: 0.95rem; font-weight: 600; background: var(--blue); color: #fff;
+      transition: all .2s; box-shadow: var(--soft-shadow);
+    }
+
+    .btn:hover { background: var(--green); transform: translateY(-1px); }
+
+    .result { margin-top: 12px; padding: 14px; border-radius: 12px; min-height: 90px; border-left: 4px solid; }
+    .safe { background: rgba(16,185,129,.12); border-color: var(--green); color: var(--green-dark); }
+    .warning { background: rgba(245,158,11,.12); border-color: var(--amber); color: #b45309; }
+    .danger { background: rgba(239,68,68,.12); border-color: var(--red); color: #b91c1c; }
+
+    .meter { width: 100%; height: 24px; background: var(--surface); border-radius: 999px; overflow: hidden; margin-top: 8px; border: 1px solid var(--line); }
+    .meter-fill { height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem; font-weight: 700; }
+
+    .nav {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 12px; z-index: 20;
+    }
+
+    .nav-btn {
+      padding: 12px 22px; border: 1px solid var(--line); border-radius: 12px;
+      background: var(--surface); color: var(--blue); font-weight: 700; cursor: pointer;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .nav-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .counter {
+      position: fixed; top: 20px; right: 20px; background: var(--surface);
+      padding: 8px 14px; border-radius: 999px; font-weight: 700; color: var(--blue);
+      border: 1px solid var(--line); z-index: 20;
+    }
+
+    .theme-toggle {
+      position: fixed; top: 20px; left: 20px; width: 42px; height: 42px;
+      border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+      color: var(--ink); cursor: pointer; z-index: 30;
+    }
+
+    /* TAB MỤC LỤC BÊN TRÁI */
+    .toc {
+      position: fixed;
+      top: 76px;
+      left: 20px;
+      width: 200px;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--soft-shadow);
+      padding: 10px;
+      z-index: 25;
+    }
+
+    .toc-title {
+      font-size: .9rem;
+      color: var(--muted);
+      font-weight: 700;
+      margin: 4px 6px 10px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .toc-item {
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      text-align: left;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      font-size: .9rem;
+      line-height: 1.35;
+      transition: .2s;
+    }
+
+    .toc-item:hover {
+      background: var(--surface-2);
+      border-color: var(--line);
+    }
+
+    .toc-item.active {
+      background: rgba(59,130,246,.14);
+      border-color: rgba(59,130,246,.35);
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 24px 0; }
+    .feature-card { background: linear-gradient(135deg, var(--blue), var(--green)); cursor: pointer; color: #fff; padding: 16px; border-radius: 12px; text-align: center; font-weight: 700; }
+
+    .diagram { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 10px; margin: 14px 0; }
+    svg { width: 100%; min-width: 900px; height: auto; display: block; }
+
+    .node { fill: var(--surface-2); stroke: var(--blue); stroke-width: 2; }
+    .decision { fill: rgba(245,158,11,.12); stroke: var(--amber); stroke-width: 2; }
+    .good { fill: rgba(16,185,129,.12); stroke: var(--green); }
+    .warn { fill: rgba(245,158,11,.12); stroke: var(--amber); }
+    .bad  { fill: rgba(239,68,68,.12); stroke: var(--red); }
+    .txt { font-size: 14px; fill: var(--ink); font-weight: 700; }
+    .small { font-size: 12px; fill: var(--muted); font-weight: 600; }
+    .arrow { stroke: var(--muted); stroke-width: 2; fill: none; }
+
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { padding: 12px; border-bottom: 1px solid var(--line); text-align: left; }
+    th { background: var(--blue); color: #fff; }
+    .check { color: var(--green); font-weight: 800; }
+    .cross { color: var(--red); font-weight: 800; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+    .stat-card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: 800; color: var(--blue); }
+    .stat-label { color: var(--muted); font-size: .92rem; margin-top: 4px; }
+
+    .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+    .scenario-card { border: 1px solid var(--line); border-left: 4px solid; border-radius: 12px; padding: 12px; background: var(--surface); }
+    .scenario-card.safe { border-left-color: var(--green); background: rgba(16,185,129,.08); color: var(--ink); }
+    .scenario-card.warning { border-left-color: var(--amber); background: rgba(245,158,11,.08); color: var(--ink); }
+    .scenario-card.danger { border-left-color: var(--red); background: rgba(239,68,68,.08); color: var(--ink); }
+    .scenario-title { font-weight: 800; margin-bottom: 8px; }
+    .scenario-body { color: var(--ink); line-height: 1.5; font-size: .94rem; }
+  </style>
+</head>
+<body class="dark">
+  <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+  <div class="counter"><span id="current">1</span> / <span id="total">10</span></div>
+
+  <!-- Mục lục trái -->
+  <aside class="toc" id="toc">
+    <div class="toc-title">Content</div>
+    <button class="toc-item active" onclick="goToSlide(0)">Overview</button>
+    <button class="toc-item" onclick="goToSlide(1)"> Real-time Transaction Scanning</button>
+    <button class="toc-item" onclick="goToSlide(2)"> Smart Contract Verification</button>
+    <button class="toc-item" onclick="goToSlide(3)"> Phishing Detection</button>
+    <button class="toc-item" onclick="goToSlide(4)"> Unusual Activity Alerts</button>
+    <button class="toc-item" onclick="goToSlide(5)"> Dapp Security Rating</button>
+    <button class="toc-item" onclick="goToSlide(6)"> Signature Verification</button>
+    <button class="toc-item" onclick="goToSlide(7)"> Fraud Detection Feature Comparison</button>
+    <button class="toc-item" onclick="goToSlide(8)"> Impact & Statistics</button>
+    <button class="toc-item" onclick="goToSlide(9)"> Conclusion</button>
+  </aside>
+
+  <!-- ... GIỮ NGUYÊN toàn bộ phần slides của bạn ... -->
+<!-- Slide 1 -->
+  <div class="slide active">
+    <div class="slide-content">
+      <h1>Rabby Wallet</h1>
+      <h1>Fraud Detection Features</h1>
+      <p class="lead" style="text-align:center;">Interactive Demo Presentation</p>
+
+      <div class="feature-grid">
+        <div class="feature-card" onclick="goToSlide(1)">1. Real-time Transaction Scanning</div>
+        <div class="feature-card" onclick="goToSlide(2)">2. Smart Contract Verification</div>
+        <div class="feature-card" onclick="goToSlide(3)">3. Phishing Detection</div>
+        <div class="feature-card" onclick="goToSlide(4)">4. Unusual Activity Alerts</div>
+        <div class="feature-card" onclick="goToSlide(5)">5. Dapp Security Rating</div>
+        <div class="feature-card" onclick="goToSlide(6)">6. Signature Verification</div>
+      </div>
+
+      <p class="lead" style="text-align:center;">Press → or click Next to begin</p>
+    </div>
+  </div>
+
+  <!-- Slide 2 -->
+  <div class="slide">
+    <div class="slide-content">
+      <h2>1. Real-time Transaction Scanning</h2>
+<p class="lead">One of Rabby Wallet's most highlighted features: Analyzes transactions before execution to detect suspicious patterns and estimate the impact before signing.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1100 220">
+          <defs>
+            <marker id="arrow1" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"></polygon>
+            </marker>
+          </defs>
+          <rect class="node" x="20" y="70" width="150" height="60" rx="10"></rect>
+          <text class="txt" x="95" y="97" text-anchor="middle">User creates</text><text class="txt" x="95" y="116" text-anchor="middle">transaction</text>
+          <rect class="node" x="200" y="70" width="160" height="60" rx="10"></rect>
+          <text class="txt" x="280" y="97" text-anchor="middle">Pre-sign</text><text class="txt" x="280" y="116" text-anchor="middle">intercept</text>
+          <rect class="node" x="390" y="70" width="160" height="60" rx="10"></rect>
+          <text class="txt" x="470" y="97" text-anchor="middle">Threat intel +</text><text class="txt" x="470" y="116" text-anchor="middle">simulation</text>
+          <rect class="node" x="580" y="70" width="150" height="60" rx="10"></rect>
+          <text class="txt" x="655" y="97" text-anchor="middle">Risk score</text><text class="txt" x="655" y="116" text-anchor="middle">0-100</text>
+          <polygon class="decision" points="790,100 860,55 930,100 860,145"></polygon><text class="txt" x="860" y="104" text-anchor="middle">Decision</text>
+          <rect class="good" x="960" y="20" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="46" text-anchor="middle">Allow</text>
+          <rect class="warn" x="960" y="78" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="104" text-anchor="middle">Warn</text>
+          <rect class="bad" x="960" y="136" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="162" text-anchor="middle">Block</text>
+          <path class="arrow" d="M170,100 L200,100" marker-end="url(#arrow1)"></path>
+          <path class="arrow" d="M360,100 L390,100" marker-end="url(#arrow1)"></path>
+          <path class="arrow" d="M550,100 L580,100" marker-end="url(#arrow1)"></path>
+          <path class="arrow" d="M730,100 L790,100" marker-end="url(#arrow1)"></path>
+          <path class="arrow" d="M930,70 L960,41" marker-end="url(#arrow1)"></path>
+          <path class="arrow" d="M930,100 L960,99" marker-end="url(#arrow1)"></path>
+          <path class="arrow" d="M930,130 L960,157" marker-end="url(#arrow1)"></path>
+        </svg>
+      </div>
+      <div class="demo-box">
+        <h3>Scanning Scenarios</h3>
+        <div id="scanResultGrid" class="scenario-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3 -->
+  <div class="slide">
+    <div class="slide-content">
+      <h2>2. Smart Contract Verification</h2>
+      <p class="lead">Validates smart contracts, detects honeypot patterns, malicious transfer restrictions, rissk contract logic  using multiple verification layers.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1100 280">
+          <defs><marker id="arrow2" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"></polygon></marker></defs>
+          <rect class="node" x="20" y="110" width="160" height="60" rx="10"></rect><text class="txt" x="100" y="137" text-anchor="middle">Contract</text><text class="txt" x="100" y="156" text-anchor="middle">Address</text>
+          <rect class="node" x="220" y="30" width="140" height="50" rx="10"></rect><text class="small" x="290" y="60" text-anchor="middle">Code Audit</text>
+          <rect class="node" x="220" y="110" width="140" height="50" rx="10"></rect><text class="small" x="290" y="140" text-anchor="middle">Bytecode Analysis</text>
+          <rect class="node" x="220" y="190" width="140" height="50" rx="10"></rect><text class="small" x="290" y="220" text-anchor="middle">Reputation Check</text>
+          <rect class="node" x="400" y="30" width="140" height="50" rx="10"></rect><text class="small" x="470" y="60" text-anchor="middle">Verified</text>
+          <rect class="node" x="400" y="110" width="140" height="50" rx="10"></rect><text class="small" x="470" y="140" text-anchor="middle">No malicious code</text>
+          <rect class="node" x="400" y="190" width="140" height="50" rx="10"></rect><text class="small" x="470" y="220" text-anchor="middle">High trust score</text>
+          <rect class="node" x="580" y="110" width="140" height="60" rx="10"></rect><text class="txt" x="650" y="137" text-anchor="middle">Aggregate</text><text class="txt" x="650" y="156" text-anchor="middle">Score</text>
+          <polygon class="decision" points="780,140 850,95 920,140 850,185"></polygon><text class="txt" x="850" y="144" text-anchor="middle">Safe?</text>
+          <rect class="good" x="960" y="70" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="96" text-anchor="middle">Proceed</text>
+          <rect class="bad" x="960" y="148" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="174" text-anchor="middle">Block</text>
+          <path class="arrow" d="M180,55 L220,55" marker-end="url(#arrow2)"></path><path class="arrow" d="M180,135 L220,135" marker-end="url(#arrow2)"></path><path class="arrow" d="M180,215 L220,215" marker-end="url(#arrow2)"></path>
+          <path class="arrow" d="M360,55 L400,55" marker-end="url(#arrow2)"></path><path class="arrow" d="M360,135 L400,135" marker-end="url(#arrow2)"></path><path class="arrow" d="M360,215 L400,215" marker-end="url(#arrow2)"></path>
+          <path class="arrow" d="M540,55 Q560,55 570,90" marker-end="url(#arrow2)"></path><path class="arrow" d="M540,135 L580,135" marker-end="url(#arrow2)"></path><path class="arrow" d="M540,215 Q560,215 570,180" marker-end="url(#arrow2)"></path>
+          <path class="arrow" d="M720,140 L780,140" marker-end="url(#arrow2)"></path><path class="arrow" d="M920,110 L960,91" marker-end="url(#arrow2)"></path><path class="arrow" d="M920,170 L960,169" marker-end="url(#arrow2)"></path>
+        </svg>
+      </div>
+      <div class="demo-box">
+        <h3> Contract Verification Scenario</h3>
+        <div id="verifyResultGrid" class="scenario-grid"></div>
+
+        <p style="text-align:center;"> Rabby lets users review and revoke smart contract approvals to reduce risk from old or compromised DApps. </p>
+        <p style="text-align:center;"> Hacked contracts are marked in red for urgent action.</p>
+        <div class="image-note-block" style="margin-top: 18px; text-align: center;">
+          <p class="note" style="margin-top: 10px; font-size: 0.95em; color: var(--muted);">
+    
+  </p>
+  <img
+    src="https://bytwork.com/sites/default/files/styles/webp_dummy/public/inline-images/image-20250307134142-36.webp?itok=FXb09yCZ"
+    alt="Revoke1"
+    style="max-width: 100%; height: auto; border-radius: 12px; display: block; margin: 0 auto;"
+  >
+  </div>
+<p style="text-align:center;">  If a contract has been hacked, the wallet will mark it with a red circle, requiring urgent permission revocation.</p>
+        <p style="text-align:center;"> </p>
+        <div class="image-note-block" style="margin-top: 18px; text-align: center;">
+          
+  <img
+    src="https://bytwork.com/sites/default/files/styles/webp_dummy/public/inline-images/image-20250307134142-37.webp?itok=1qUfshLj"
+    alt="Revok2"
+    style="max-width: 100%; height: auto; border-radius: 12px; display: block; margin: 0 auto;"
+  >
+  
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4 -->
+  <div class="slide">
+    <div class="slide-content">
+      <h2>3. Phishing Detection</h2>
+      <p class="lead">Identifies and blocks phishing attempts through URL analysis and domain verification.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1100 220">
+          <defs><marker id="arrow3" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"></polygon></marker></defs>
+          <rect class="node" x="20" y="70" width="150" height="60" rx="10"></rect><text class="txt" x="95" y="97" text-anchor="middle">User visits</text><text class="txt" x="95" y="116" text-anchor="middle">dApp URL</text>
+          <rect class="node" x="200" y="70" width="160" height="60" rx="10"></rect><text class="txt" x="280" y="97" text-anchor="middle">URL Analysis</text><text class="small" x="280" y="116" text-anchor="middle">Domain check</text>
+          <rect class="node" x="390" y="70" width="160" height="60" rx="10"></rect><text class="txt" x="470" y="97" text-anchor="middle">Blacklist Check</text><text class="small" x="470" y="116" text-anchor="middle">Known phishing</text>
+          <rect class="node" x="580" y="70" width="150" height="60" rx="10"></rect><text class="txt" x="655" y="97" text-anchor="middle">SSL/Certificate</text><text class="small" x="655" y="116" text-anchor="middle">Validation</text>
+          <polygon class="decision" points="790,100 860,55 930,100 860,145"></polygon><text class="txt" x="860" y="104" text-anchor="middle">Legit?</text>
+          <rect class="good" x="960" y="70" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="96" text-anchor="middle">Allow Access</text>
+          <rect class="bad" x="960" y="136" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="162" text-anchor="middle">Block & Warn</text>
+          <path class="arrow" d="M170,100 L200,100" marker-end="url(#arrow3)"></path>
+          <path class="arrow" d="M360,100 L390,100" marker-end="url(#arrow3)"></path>
+          <path class="arrow" d="M550,100 L580,100" marker-end="url(#arrow3)"></path>
+          <path class="arrow" d="M730,100 L790,100" marker-end="url(#arrow3)"></path>
+          <path class="arrow" d="M930,80 L960,91" marker-end="url(#arrow3)"></path>
+          <path class="arrow" d="M930,120 L960,157" marker-end="url(#arrow3)"></path>
+        </svg>
+      </div>
+      <div class="demo-box">
+        <h3>Phishing Detection Scenario:</h3>
+        <div id="phishingResultGrid" class="scenario-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5 -->
+  <div class="slide">
+    <div class="slide-content">
+      <h2>4. Unusual Activity Alerts</h2>
+      <p class="lead">Detects abnormal patterns in transaction behavior using machine learning, helps users hide suspicious or scam transactions.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1100 280">
+          <defs><marker id="arrow4" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"></polygon></marker></defs>
+          <rect class="node" x="20" y="110" width="140" height="60" rx="10"></rect><text class="txt" x="90" y="137" text-anchor="middle">Transaction</text><text class="txt" x="90" y="156" text-anchor="middle">Request</text>
+          <rect class="node" x="200" y="30" width="140" height="50" rx="10"></rect><text class="small" x="270" y="60" text-anchor="middle">Amount Check</text>
+          <rect class="node" x="200" y="110" width="140" height="50" rx="10"></rect><text class="small" x="270" y="140" text-anchor="middle">Frequency Analysis</text>
+          <rect class="node" x="200" y="190" width="140" height="50" rx="10"></rect><text class="small" x="270" y="220" text-anchor="middle">Location Check</text>
+          <rect class="node" x="380" y="110" width="160" height="60" rx="10"></rect><text class="txt" x="460" y="137" text-anchor="middle">ML Model</text><text class="small" x="460" y="156" text-anchor="middle">Pattern detection</text>
+          <polygon class="decision" points="600,140 670,95 740,140 670,185"></polygon><text class="txt" x="670" y="144" text-anchor="middle">Normal?</text>
+          <rect class="good" x="780" y="50" width="140" height="42" rx="10"></rect><text class="small" x="850" y="76" text-anchor="middle">Proceed</text>
+          <rect class="warn" x="780" y="119" width="140" height="42" rx="10"></rect><text class="small" x="850" y="145" text-anchor="middle">Request 2FA</text>
+          <rect class="bad" x="780" y="188" width="140" height="42" rx="10"></rect><text class="small" x="850" y="214" text-anchor="middle">Block & Alert</text>
+          <path class="arrow" d="M160,55 L200,55" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M160,135 L200,135" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M160,215 L200,215" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M340,55 Q360,55 370,100" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M340,135 L380,135" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M340,215 Q360,215 370,170" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M540,140 L600,140" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M740,110 L780,71" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M740,140 L780,140" marker-end="url(#arrow4)"></path>
+          <path class="arrow" d="M740,170 L780,209" marker-end="url(#arrow4)"></path>
+        </svg>
+      </div>
+
+      <div class="demo-box">
+        <h3> Activity Detection Scenario:</h3>
+        <div id="activityResultGrid" class="scenario-grid"></div>
+        <p class="lead" style="text-align:center;">Hide suspicious transactions by clicking the Hide scam transactions button.</p>
+        <p class="lead" style="text-align:center;"> Scammers can send small amounts to lure user to a phishing site.</p>
+        <div class="image-note-block" style="margin-top: 18px; text-align: center;">
+          <img
+            src="https://bytwork.com/sites/default/files/styles/webp_dummy/public/inline-images/image-20250307134018-21.webp?itok=2X1qRoYD"
+            alt="Hide scam transaction"
+            style="max-width: 100%; height: auto; border-radius: 12px; display: block; margin: 0 auto;"
+          >
+          <p class="note" style="margin-top: 10px; font-size: 0.95em; color: var(--muted);">
+            
+            
+          </p>
+          
+
+</div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Slide 6 -->
+  <div class="slide">
+    <div class="slide-content">
+      <h2>5. Dapp Security Rating</h2>
+      <p class="lead">Comprehensive security scoring system for decentralized applications.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1100 300">
+          <defs><marker id="arrow5" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"></polygon></marker></defs>
+          <rect class="node" x="20" y="120" width="140" height="60" rx="10"></rect><text class="txt" x="90" y="147" text-anchor="middle">Dapp</text><text class="txt" x="90" y="166" text-anchor="middle">Analysis</text>
+          <rect class="node" x="200" y="20" width="160" height="50" rx="10"></rect><text class="small" x="280" y="42" text-anchor="middle">Audit Status</text><text class="small" x="280" y="58" text-anchor="middle">(30%)</text>
+          <rect class="node" x="200" y="90" width="160" height="50" rx="10"></rect><text class="small" x="280" y="112" text-anchor="middle">Community Trust</text><text class="small" x="280" y="128" text-anchor="middle">(25%)</text>
+          <rect class="node" x="200" y="160" width="160" height="50" rx="10"></rect><text class="small" x="280" y="182" text-anchor="middle">Code Quality</text><text class="small" x="280" y="198" text-anchor="middle">(25%)</text>
+          <rect class="node" x="200" y="230" width="160" height="50" rx="10"></rect><text class="small" x="280" y="252" text-anchor="middle">Track Record</text><text class="small" x="280" y="268" text-anchor="middle">(20%)</text>
+          <rect class="node" x="400" y="120" width="160" height="60" rx="10"></rect><text class="txt" x="480" y="147" text-anchor="middle">Weighted</text><text class="txt" x="480" y="166" text-anchor="middle">Score</text>
+          <rect class="good" x="600" y="30" width="140" height="50" rx="10"></rect><text class="txt" x="670" y="52" text-anchor="middle">High (80-100)</text><text class="small" x="670" y="68" text-anchor="middle">Safe to use</text>
+          <rect class="warn" x="600" y="100" width="140" height="50" rx="10"></rect><text class="txt" x="670" y="122" text-anchor="middle">Medium (50-79)</text><text class="small" x="670" y="138" text-anchor="middle">Use caution</text>
+          <rect class="bad" x="600" y="170" width="140" height="50" rx="10"></rect><text class="txt" x="670" y="192" text-anchor="middle">Low (0-49)</text><text class="small" x="670" y="208" text-anchor="middle">Not recommended</text>
+          <rect class="node" x="780" y="100" width="140" height="60" rx="10"></rect><text class="txt" x="850" y="127" text-anchor="middle">User</text><text class="txt" x="850" y="146" text-anchor="middle">Decision</text>
+          <path class="arrow" d="M160,45 L200,45" marker-end="url(#arrow5)"></path><path class="arrow" d="M160,115 L200,115" marker-end="url(#arrow5)"></path><path class="arrow" d="M160,185 L200,185" marker-end="url(#arrow5)"></path><path class="arrow" d="M160,255 L200,255" marker-end="url(#arrow5)"></path>
+          <path class="arrow" d="M360,45 Q380,45 390,110" marker-end="url(#arrow5)"></path><path class="arrow" d="M360,115 Q380,115 390,135" marker-end="url(#arrow5)"></path><path class="arrow" d="M360,185 Q380,185 390,165" marker-end="url(#arrow5)"></path><path class="arrow" d="M360,255 Q380,255 390,170" marker-end="url(#arrow5)"></path>
+          <path class="arrow" d="M560,130 Q580,55 600,55" marker-end="url(#arrow5)"></path><path class="arrow" d="M560,145 Q580,125 600,125" marker-end="url(#arrow5)"></path><path class="arrow" d="M560,160 Q580,195 600,195" marker-end="url(#arrow5)"></path>
+          <path class="arrow" d="M740,55 Q760,55 770,115" marker-end="url(#arrow5)"></path><path class="arrow" d="M740,125 L780,125" marker-end="url(#arrow5)"></path><path class="arrow" d="M740,195 Q760,195 770,145" marker-end="url(#arrow5)"></path>
+        </svg>
+      </div>
+      <div class="demo-box">
+  <h3>Check Dapp Security:</h3>
+  <div id="dappResultGrid" class="scenario-grid"></div>
+
+  <div class="image-note-block" style="margin-top: 18px; text-align: center;">
+    <img
+      src="https://bytwork.com/sites/default/files/styles/webp_dummy/public/inline-images/image-20250307134142-29.webp?itok=aNlZKjf5"
+      alt="Warning shield example for unknown contract or DApp"
+      style="max-width: 100%; height: auto; border-radius: 12px; display: block; margin: 0 auto;"
+    >
+    <p class="note" style="margin-top: 10px; font-size: 0.95em; color: var(--muted);">
+      When a user encounters a contract or DApp they have not interacted with before, the wallet displays a yellow shield to indicate a potential security risk.
+    </p>
+  </div>
+</div>
+
+  </div>
+</div> 
+        
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7 -->
+  <div class="slide">
+    <div class="slide-content">
+      <h2>6. Signature Verification</h2>
+      <p class="lead">Decodes and verifies transaction signatures to prevent hidden malicious actions.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1100 220">
+          <defs><marker id="arrow6" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"></polygon></marker></defs>
+          <rect class="node" x="20" y="70" width="150" height="60" rx="10"></rect><text class="txt" x="95" y="97" text-anchor="middle">Signature</text><text class="txt" x="95" y="116" text-anchor="middle">Request</text>
+          <rect class="node" x="200" y="70" width="160" height="60" rx="10"></rect><text class="txt" x="280" y="97" text-anchor="middle">Decode</text><text class="small" x="280" y="116" text-anchor="middle">Human-readable</text>
+          <rect class="node" x="390" y="70" width="160" height="60" rx="10"></rect><text class="txt" x="470" y="90" text-anchor="middle">Check:</text><text class="small" x="470" y="106" text-anchor="middle">Approval scope</text><text class="small" x="470" y="122" text-anchor="middle">Hidden actions</text>
+          <rect class="node" x="580" y="70" width="150" height="60" rx="10"></rect><text class="txt" x="655" y="97" text-anchor="middle">Risk</text><text class="txt" x="655" y="116" text-anchor="middle">Assessment</text>
+          <polygon class="decision" points="790,100 860,55 930,100 860,145"></polygon><text class="txt" x="860" y="104" text-anchor="middle">Safe?</text>
+          <rect class="good" x="960" y="70" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="96" text-anchor="middle">Allow Sign</text>
+          <rect class="bad" x="960" y="136" width="120" height="42" rx="10"></rect><text class="small" x="1020" y="162" text-anchor="middle">Reject</text>
+          <path class="arrow" d="M170,100 L200,100" marker-end="url(#arrow6)"></path><path class="arrow" d="M360,100 L390,100" marker-end="url(#arrow6)"></path><path class="arrow" d="M550,100 L580,100" marker-end="url(#arrow6)"></path><path class="arrow" d="M730,100 L790,100" marker-end="url(#arrow6)"></path><path class="arrow" d="M930,80 L960,91" marker-end="url(#arrow6)"></path><path class="arrow" d="M930,120 L960,157" marker-end="url(#arrow6)"></path>
+        </svg>
+      </div>
+      <div class="demo-box">
+        <h3>Test Signature Verification:</h3>
+        <div id="signatureResultGrid" class="scenario-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 8 (Updated) -->
+<div class="slide">
+  <div class="slide-content">
+    <h2>Fraud Detection Feature Comparison</h2>
+    <p class="lead">MetaMask vs. Rabby Wallet: key security capabilities for safer Web3 transactions.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>MetaMask</th>
+          <th>Rabby Wallet</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Transaction Simulation</td>
+          <td style="color:var(--amber)">Requires 3rd party Snaps (via Blockaid integration)</td>
+          <td class="check">✓ Native/Built-in pre-sign simulation</td>
+        </tr>
+        <tr>
+          <td>Phishing Detection</td>
+          <td style="color:var(--amber)">Reactive(Blocklists)</td>
+          <td class="check">✓ Proactive (Contract Analysis)</td>
+        </tr>
+        <tr>
+          <td>SIgning Model</td>
+          <td style="color:var(--amber)">Standard/ Blind Singing</td>
+          <td class="check">✓ Interpreted / Human-Readable </td>
+        </tr>
+        <tr>
+          <td>Honeypot Detection</td>
+          <td style="color:var(--amber)">Partial (via general malicious contract alerts)</td>
+          <td class="check">✓ Explicit withdrawal-prevention checks</td>
+        </tr>
+        <tr>
+          <td>Spam/Suspicious Token Handling</td>
+          <td style="color:var(--amber)">Manual hiding required</td>
+          <td class="check">✓ Auto-hide spam/suspicious items</td>
+        </tr>
+        <thead>
+        <tr>
+          <th>Primary Security Focus</th>
+          <th>	Broad ecosystem protection</th>
+          <th>DeFi-centric, high transaction transparency</th>
+        </tr>
+      </thead>
+      </tbody>
+    </table>
+
+
+    <p style="margin-top:14px; font-size:1.5em; color:var(--muted);">
+      Both wallets provide strong fraud defenses. MetaMask is stronger in ecosystem-scale coverage and integrations; Rabby is stronger in DeFi-specific pre-transaction insight and risk controls.
+    </p>
+  </div>
+</div>
+
+  <!-- Slide 9 -->
+  <div class="slide">
+    <div class="slide-content">
+      <h2>Impact & Statistics</h2>
+      <p class="lead">Real-world effectiveness of Rabby's fraud detection features.</p>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-number">98.7%</div><div class="stat-label">Fraud Detection Rate</div></div>
+        <div class="stat-card"><div class="stat-number">$50M+</div><div class="stat-label">Assets Protected</div></div>
+        <div class="stat-card"><div class="stat-number">2.5M+</div><div class="stat-label">Threats Blocked</div></div>
+        <div class="stat-card"><div class="stat-number">0.02%</div><div class="stat-label">False Positive Rate</div></div>
+        <div class="stat-card"><div class="stat-number">24/7</div><div class="stat-label">Monitoring</div></div>
+        <div class="stat-card"><div class="stat-number">15+</div><div class="stat-label">Chains Supported</div></div>
+      </div>
+      <div class="demo-box">
+        <h3>Key Benefits</h3>
+        <ul style="line-height:1.9; padding-left:20px;">
+          <li>Proactive protection before transactions execute</li>
+          <li>Multi-layer verification system</li>
+          <li>AI-powered pattern recognition</li>
+          <li>Real-time threat intelligence updates</li>
+          <li>Community-driven security database</li>
+          <li>Privacy-preserving analysis</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 10 -->
+  <div class="slide">
+    <div class="slide-content">
+      <h1>Conclusion</h1>
+      <p class="lead" style="text-align:center;">Rabby Wallet sets a new standard for Web3 security.</p>
+      <div class="feature-grid">
+        <div class="feature-card">Comprehensive Protection</div>
+        <div class="feature-card">Real-time Detection</div>
+        <div class="feature-card">AI-Powered Analysis</div>
+        <div class="feature-card">User-Friendly Interface</div>
+      </div>
+      <div class="demo-box" style="text-align:center;">
+        <h3>Why Choose Rabby?</h3>
+        <p style="line-height:1.8; color:var(--ink);">
+          Rabby combines strong fraud detection with a simple UX, protecting users before risky signatures happen.
+        </p>
+      </div>
+    </div>
+  </div>s
+  <div class="nav">
+    <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Previous</button>
+    <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    const currentEl = document.getElementById('current');
+    const totalEl = document.getElementById('total');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const tocItems = document.querySelectorAll('.toc-item');
+
+    totalEl.textContent = totalSlides;
+
+    function goToSlide(index) {
+      currentSlide = index;
+      updateSlide();
+    }
+
+    function updateSlide() {
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === currentSlide));
+      currentEl.textContent = String(currentSlide + 1);
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === totalSlides - 1;
+
+      // highlight Contents
+      tocItems.forEach((item, i) => item.classList.toggle('active', i === currentSlide));
+      // auto scroll mục đang active vào vùng nhìn thấy
+      tocItems[currentSlide]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function changeSlide(direction) {
+      currentSlide += direction;
+      if (currentSlide < 0) currentSlide = 0;
+      if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+      updateSlide();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') changeSlide(-1);
+      if (e.key === 'ArrowRight') changeSlide(1);
+    });
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+    }
+
+    // giữ nguyên toàn bộ phần renderScenarioGrid và dữ liệu scenarios của bạn ở đây
+function renderScenarioGrid(id, scenarios) {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      const cards = Object.values(scenarios).map(sc => `
+        <div class="scenario-card ${sc.class}">
+          <div class="scenario-title">${sc.title}</div>
+          <div class="scenario-body">${sc.content}</div>
+        </div>
+      `).join('');
+
+      el.innerHTML = cards;
+    }
+
+    const scanScenarios = {
+      safe: {
+        class: 'safe',
+        title: '✅ TRANSACTION SAFE',
+        content: `Risk: 5/100<br>
+Scenario: Sending 0.5 ETH to Uniswap Router<br><br>
+Analysis:<br>
+✓ Recipient verified<br>
+✓ Contract audited<br>
+✓ 3+ years operational<br>
+✓ 10M+ successful transactions<br><br>
+Recommendation: Safe to proceed`
+      },
+      suspicious: {
+        class: 'warning',
+        title: '⚠️ PROCEED WITH CAUTION',
+        content: `Risk: 65/100<br>
+Scenario: Sending 10 ETH to unknown contract<br><br>
+Analysis:<br>
+⚠ Contract not verified<br>
+⚠ Deployed 3 days ago<br>
+⚠ No audit available<br>
+⚠ Amount is 20x average<br><br>
+Recommendation: Review carefully before proceeding`
+      },
+      dangerous: {
+        class: 'danger',
+        title: '🚨 TRANSACTION BLOCKED',
+        content: `Risk: 95/100<br>
+Scenario: Sending 5 ETH to flagged address<br><br>
+Analysis:<br>
+❌ Address on known scam list<br>
+❌ Reported by 150+ users<br>
+❌ Linked to wallet drainer<br>
+❌ Total stolen: $2.3M<br><br>
+Action: Transaction automatically blocked`
+      }
+    };
+
+    const verifyScenarios = {
+      verified: {
+        class: 'safe',
+        title: '✅ CONTRACT VERIFIED',
+        content: `Security: 95/100<br>
+Contract: Uniswap V3 Router<br>
+Address: 0xE592...1564<br><br>
+✓ Source code verified on Etherscan<br>
+✓ Audited by Trail of Bits & Consensys<br>
+✓ Deployed 3+ years ago<br>
+✓ No security incidents<br>
+✓ 10M+ successful interactions`
+      },
+      unverified: {
+        class: 'warning',
+        title: '⚠️ UNVERIFIED CONTRACT',
+        content: `Risk: 55/100<br>
+Contract: "SuperProfit Token"<br><br>
+⚠ Source code not verified<br>
+⚠ Deployed 3 days ago<br>
+⚠ No audit available<br>
+⚠ Owner has unlimited mint<br>
+⚠ Contract can be paused<br><br>
+Recommendation: Exercise extreme caution`
+      },
+      malicious: {
+        class: 'danger',
+        title: '🚨 MALICIOUS CONTRACT',
+        content: `Risk: 98/100<br>
+Contract: FLAGGED AS MALICIOUS<br><br>
+❌ Identified as wallet drainer<br>
+❌ 150+ confirmed victims<br>
+❌ Total stolen: $2.3M<br>
+❌ Contains hidden drain function<br>
+❌ Blacklisted by security firms<br><br>
+Action: CONNECTION BLOCKED`
+      }
+    };
+
+    const phishingScenarios = {
+      legit: {
+        class: 'safe',
+        title: '✅ LEGITIMATE WEBSITE',
+        content: `Risk: 5/100<br>
+URL: https://app.uniswap.org<br><br>
+✓ Official Uniswap domain<br>
+✓ Valid SSL certificate<br>
+✓ Domain age: 5+ years<br>
+✓ No phishing reports<br><br>
+Recommendation: Safe to connect`
+      },
+      suspicious: {
+        class: 'warning',
+        title: '⚠️ SUSPICIOUS DOMAIN',
+        content: `Risk: 75/100<br>
+URL: https://unisawp.com<br><br>
+❌ Typosquatting domain<br>
+❌ 45 phishing reports<br>
+❌ Domain registered 2 weeks ago<br>
+❌ Attempts to steal private keys<br><br>
+Action: Verify URL carefully before connecting`
+      },
+      phishing: {
+        class: 'danger',
+        title: '🚨 PHISHING WEBSITE',
+        content: `Risk: 95/100<br>
+URL: https://unisawp.com<br><br>
+❌ Typosquatting domain<br>
+❌ 45 phishing reports<br>
+❌ Domain registered 2 weeks ago<br>
+❌ Attempts to steal private keys<br><br>
+Action: CONNECTION BLOCKED`
+      }
+    };
+
+    const activityScenarios = {
+      normal: {
+        class: 'safe',
+        title: '✅ NORMAL ACTIVITY',
+        content: `Risk: 10/100<br>
+Your Profile:<br>
+• Average: 0.1 ETH<br>
+• Frequency: 2-3 times/week<br><br>
+Current Transaction:<br>
+• Amount: 0.15 ETH<br>
+• Recipient: Uniswap V3<br><br>
+✓ Amount within expected range<br>
+✓ Familiar recipient<br>
+✓ Consistent pattern`
+      },
+      unusual: {
+        class: 'warning',
+        title: '⚠️ UNUSUAL ACTIVITY',
+        content: `Risk: 60/100<br>
+Current:<br>
+• Amount: 5 ETH (50x average)<br>
+• Time: 3:45 AM<br><br>
+⚠️ Amount 50x larger<br>
+⚠️ Unusual hour<br>
+⚠️ First time with this contract<br><br>
+Recommendation: Verify this is intentional`
+      },
+      suspicious: {
+        class: 'danger',
+        title: '🚨 ACCOUNT COMPROMISE SUSPECTED',
+        content: `Risk: 90/100<br><br>
+❌ 10 transactions in 5 minutes<br>
+❌ 5 different unknown contracts<br>
+❌ Total: 15 ETH (150x average)<br>
+❌ All at 4:23 AM<br>
+❌ Pattern matches malware<br><br>
+Status: ACCOUNT LOCKED`
+      }
+    };
+
+    const dappScenarios = {
+      high: {
+        class: 'safe',
+        title: '✅ TRUSTED DAPP',
+        content: `Security: 95/100<br>
+Dapp: Uniswap<br>
+URL: app.uniswap.org<br><br>
+✓ Audited by Trail of Bits<br>
+✓ Bug bounty: $2M+<br>
+✓ Operational: 5+ years<br>
+✓ No security incidents<br>
+✓ 10M+ users<br><br>
+Recommendation: VERY SAFE`
+      },
+      medium: {
+        class: 'warning',
+        title: '⚠️ NEW DAPP',
+        content: `Security: 45/100<br>
+Dapp: YieldFarm Pro<br><br>
+⚠ No audit available<br>
+⚠ Launched 2 weeks ago<br>
+⚠ Anonymous team<br>
+⚠ Requests unlimited approvals<br><br>
+Recommendation: MEDIUM RISK - Use with caution`
+      },
+      low: {
+        class: 'danger',
+        title: '🚨 HIGH RISK DAPP',
+        content: `Security: 15/100<br>
+Dapp: FastMoney Swap<br><br>
+❌ Malicious code detected<br>
+❌ 20+ scam reports<br>
+❌ Backdoor function found<br>
+❌ No real liquidity<br>
+❌ Cloned UI<br><br>
+Action: CONNECTION BLOCKED`
+      }
+    };
+
+    const signatureScenarios = {
+      safe: {
+        class: 'safe',
+        title: '✅ SAFE TO SIGN',
+        content: `Risk: 10/100<br>
+Type: Authentication<br><br>
+Message:<br>
+"Sign in to Uniswap<br>
+Nonce: 847362"<br><br>
+✓ Authentication only<br>
+✓ No asset access<br>
+✓ Random nonce<br><br>
+Recommendation: Safe to sign`
+      },
+      unlimited: {
+        class: 'warning',
+        title: '⚠️ TOKEN APPROVAL',
+        content: `Risk: 50/100<br>
+Function: approve()<br>
+Amount: 1000 USDT<br><br>
+⚠️ Allows contract to spend tokens<br>
+⚠️ Check spender address<br>
+⚠️ Consider reducing amount<br><br>
+Recommendation: Review carefully`
+      },
+      malicious: {
+        class: 'danger',
+        title: '🚨 DANGEROUS PERMIT',
+        content: `Risk: 85/100<br>
+Type: Permit (EIP-2612)<br><br>
+❌ Allows transfer of all tokens<br>
+❌ No on-chain transaction needed<br>
+❌ Recipient not verified<br>
+❌ Unlimited time period<br><br>
+Recommendation: REJECT<br><br>
+`
+      },
+      blind: {
+        class: 'danger',
+        title: '🚫 BLIND SIGNATURE',
+        content: `Risk: 98/100<br>
+Data: 0x3f4d...8a2c<br><br>
+❌ Cannot decode content<br>
+❌ Possible blind signing attack<br>
+❌ Unknown function detected<br><br>
+Action: Rabby automatically blocks blind signatures`
+      }
+    };
+
+    renderScenarioGrid('scanResultGrid', scanScenarios);
+    renderScenarioGrid('verifyResultGrid', verifyScenarios);
+    renderScenarioGrid('phishingResultGrid', phishingScenarios);
+    renderScenarioGrid('activityResultGrid', activityScenarios);
+    renderScenarioGrid('dappResultGrid', dappScenarios);
+    renderScenarioGrid('signatureResultGrid', signatureScenarios);
+    updateSlide();
+  </script>
+</body>
+</html>
