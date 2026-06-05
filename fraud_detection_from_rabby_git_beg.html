@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<!-- saved from url=(0124)file:///D:/Code/claude/Projects/Rabby%20Wallet%20Fraud%20Detection%20Features/rabby-fraud-detection-git-simpler-version.html -->
+<html lang="en" data-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rabby Wallet — Fraud Detection</title>
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --sidebar-w: 260px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+  --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+  --accent: #6c8ef7; --accent2: #a78bfa; --green: #34d399;
+  --amber: #fbbf24; --red: #f87171;
+  --tab-active-bg: #6c8ef7; --tab-active-text: #fff;
+  --chart-grid: rgba(255,255,255,0.06);
+}
+[data-theme="light"] {
+  --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+  --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+  --accent: #4361ee; --accent2: #7c3aed; --green: #059669;
+  --amber: #d97706; --red: #dc2626;
+  --tab-active-bg: #4361ee; --tab-active-text: #fff;
+  --chart-grid: rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+/* TOP BAR */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 16px; gap: 12px; z-index: 100;
+}
+#toggle-sidebar-btn, #theme-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  transition: background var(--transition);
+}
+#toggle-sidebar-btn:hover, #theme-btn:hover { background: var(--border); }
+#topbar h1 { font-size: 16px; font-weight: 700; flex: 1; }
+#topbar h1 span { color: var(--accent); }
+#theme-btn { margin-left: auto; }
+
+/* SIDEBAR */
+#sidebar {
+  position: fixed; left: 0; top: 52px; bottom: 0; width: var(--sidebar-w);
+  background: var(--bg2); border-right: 1px solid var(--border);
+  overflow-y: auto; padding: 16px 0; transition: transform var(--transition); z-index: 90;
+}
+#sidebar.hidden { transform: translateX(-260px); }
+.sidebar-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); padding: 12px 20px 4px;
+}
+.nav-link {
+  display: block; padding: 8px 20px; color: var(--text-muted);
+  cursor: pointer; font-size: 14px; border-left: 3px solid transparent;
+  transition: all var(--transition);
+}
+.nav-link:hover { background: var(--bg3); color: var(--text); }
+.nav-link.active { border-left-color: var(--accent); color: var(--accent); background: var(--bg3); font-weight: 600; }
+
+/* MAIN */
+#main {
+  margin-left: var(--sidebar-w); margin-top: 52px;
+  padding: 36px 48px 80px; transition: margin-left var(--transition);
+  max-width: calc(var(--sidebar-w) + 900px);
+}
+#main.expanded { margin-left: 0; }
+.page { display: none; animation: fadeIn 0.25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* CARDS */
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px;
+}
+.card-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.card-row .card { flex: 1; min-width: 160px; margin-bottom: 0; }
+.stat-val { font-size: 28px; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* CALLOUTS */
+.callout {
+  border-left: 3px solid var(--accent); background: var(--bg3);
+  border-radius: 0 var(--radius) var(--radius) 0; padding: 14px 18px; margin-bottom: 16px;
+}
+.callout.green { border-left-color: var(--green); }
+.callout.amber { border-left-color: var(--amber); }
+.callout.red { border-left-color: var(--red); }
+.callout p { margin: 4px 0 0; color: var(--text-muted); font-size: 14px; }
+.callout strong { color: var(--text); }
+
+/* TABS */
+.tabs { margin-bottom: 16px; }
+.tab-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
+.tab-btn {
+  padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text-muted); cursor: pointer;
+  font-size: 13px; font-weight: 600; transition: all var(--transition);
+}
+.tab-btn.active { background: var(--tab-active-bg); color: var(--tab-active-text); border-color: var(--tab-active-bg); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* STEPS */
+.steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.step {
+  display: flex; flex-direction: column; align-items: center; cursor: pointer;
+  min-width: 90px; flex: 1;
+}
+.step-circle {
+  width: 36px; height: 36px; border-radius: 50%; background: var(--bg3);
+  border: 2px solid var(--border); display: flex; align-items: center;
+  justify-content: center; font-weight: 700; font-size: 14px; color: var(--text-muted);
+  transition: all var(--transition); margin-bottom: 6px;
+}
+.step.done .step-circle { background: var(--accent); border-color: var(--accent); color: #fff; }
+.step-label { font-size: 12px; color: var(--text-muted); text-align: center; max-width: 100px; }
+.step.done .step-label { color: var(--text); }
+
+/* RISK LEVELS */
+.level-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; margin: 2px 4px;
+}
+.level-safe { background: rgba(52,211,153,0.15); color: var(--green); }
+.level-warning { background: rgba(251,191,36,0.15); color: var(--amber); }
+.level-danger { background: rgba(248,113,113,0.15); color: var(--red); }
+.level-forbidden { background: rgba(100,100,100,0.3); color: #aaa; }
+
+/* COMPARE TABLE */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.compare-table th {
+  background: var(--bg3); padding: 10px 14px; text-align: left;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.compare-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.compare-table tr:hover td { background: var(--bg3); }
+.badge-green { background: rgba(52,211,153,0.15); color: var(--green); padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-red { background: rgba(248,113,113,0.15); color: var(--red); padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-amber { background: rgba(251,191,36,0.15); color: var(--amber); padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+/* PROGRESS */
+.progress-row { margin-bottom: 14px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+.progress-bar { background: var(--bg3); border-radius: 20px; height: 7px; overflow: hidden; }
+.progress-fill {
+  height: 100%; border-radius: 20px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  width: 0; transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* CODE */
+pre {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px; overflow-x: auto;
+  font-family: var(--font-mono); font-size: 13px; margin: 12px 0; line-height: 1.5;
+}
+code { font-family: var(--font-mono); font-size: 13px; }
+
+/* FLOW DIAGRAM */
+.flow-diagram { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+.flow-box {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 18px; font-size: 14px; cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+.flow-box:hover { border-color: var(--accent); background: var(--bg2); }
+.flow-box.highlight { border-color: var(--accent); background: var(--bg2); }
+.flow-arrow { text-align: center; font-size: 18px; color: var(--text-muted); line-height: 1; }
+.flow-box .tag { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.flow-box .name { font-weight: 700; color: var(--accent); }
+.flow-box .desc { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+/* CHART */
+.chart-wrap {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+}
+canvas { display: block; width: 100%; }
+
+h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+h3 { font-size: 16px; font-weight: 700; margin: 18px 0 8px; color: var(--accent); }
+p { margin-bottom: 12px; color: var(--text-muted); }
+p strong { color: var(--text); }
+ul { padding-left: 20px; color: var(--text-muted); margin-bottom: 12px; }
+ul li { margin-bottom: 4px; }
+.page-title-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+.section-divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+/* INTERACTIVE */
+.risk-simulator {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+}
+.sim-row { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.sim-label { font-size: 14px; font-weight: 600; min-width: 200px; }
+.toggle {
+  width: 42px; height: 24px; border-radius: 12px; background: var(--border);
+  position: relative; cursor: pointer; transition: background var(--transition);
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: ''; position: absolute; width: 18px; height: 18px;
+  background: #fff; border-radius: 50%; top: 3px; left: 3px;
+  transition: transform var(--transition);
+}
+.toggle.on { background: var(--accent); }
+.toggle.on::after { transform: translateX(18px); }
+.sim-status { font-size: 13px; color: var(--text-muted); }
+#sim-result {
+  margin-top: 20px; padding: 16px 20px; border-radius: var(--radius);
+  border: 2px solid var(--border); text-align: center; font-size: 18px; font-weight: 700;
+  transition: all var(--transition);
+}
+
+@media (max-width: 700px) {
+  #sidebar { transform: translateX(-260px); }
+  #sidebar.visible { transform: translateX(0); }
+  #main { margin-left: 0; padding: 24px 18px 60px; }
+  #main.expanded { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <button id="toggle-sidebar-btn" onclick="toggleSidebar()">Menu</button>
+  <h1>Rabby Wallet — <span>Fraud Detection</span></h1>
+  <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-label">Getting Started</div>
+  <a class="nav-link active" onclick="showPage(&#39;overview&#39;)">Overview</a>
+  <a class="nav-link" onclick="showPage(&#39;layers&#39;)">The 5 Layers</a>
+
+  <div class="sidebar-label">Core Systems</div>
+  <a class="nav-link" onclick="showPage(&#39;api&#39;)">Backend API</a>
+  <a class="nav-link" onclick="showPage(&#39;engine&#39;)">Rule Engine</a>
+  <a class="nav-link" onclick="showPage(&#39;address&#39;)">Address Checks</a>
+
+  <div class="sidebar-label">How It Flows</div>
+  <a class="nav-link" onclick="showPage(&#39;signtx&#39;)">Signing a Transaction</a>
+  <a class="nav-link" onclick="showPage(&#39;userdata&#39;)">Your Personal Lists</a>
+
+  <div class="sidebar-label">Try It</div>
+  <a class="nav-link" onclick="showPage(&#39;simulator&#39;)">Risk Simulator</a>
+  <a class="nav-link" onclick="showPage(&#39;summary&#39;)">Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+
+<!-- OVERVIEW -->
+<div class="page active" id="page-overview">
+  <h2>How Rabby Protects You from Fraud</h2>
+  <p class="page-title-meta">Beginner guide — no code knowledge required</p>
+
+  <div class="callout">
+    <strong>The Big Idea</strong>
+    <p>Every time you approve a transaction in Rabby, it runs dozens of automatic checks in the background — checking if the contract is safe, if the address is known to be a scammer, and if what you're about to do makes sense. This all happens in milliseconds.</p>
+  </div>
+
+  <div class="card-row">
+    <div class="card">
+      <div class="stat-val">5</div>
+      <div class="stat-label">Layers of protection</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">4</div>
+      <div class="stat-label">Risk levels (Safe to Forbidden)</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">5</div>
+      <div class="stat-label">Address risk types checked</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">6</div>
+      <div class="stat-label">Steps per transaction scan</div>
+    </div>
+  </div>
+
+  <h3>What Rabby checks before you sign</h3>
+  <p>Think of Rabby like a security guard at a nightclub. Before letting you in (signing a transaction), the guard checks:</p>
+
+  <div class="steps" id="steps-overview">
+    <div class="step done" onclick="markStep(&#39;steps-overview&#39;, 0)">
+      <div class="step-circle">1</div>
+      <div class="step-label">Is the dapp website safe?</div>
+    </div>
+    <div class="step done" onclick="markStep(&#39;steps-overview&#39;, 1)">
+      <div class="step-circle">2</div>
+      <div class="step-label">Is the contract legitimate?</div>
+    </div>
+    <div class="step done" onclick="markStep(&#39;steps-overview&#39;, 2)">
+      <div class="step-circle">3</div>
+      <div class="step-label">Is the recipient address trusted?</div>
+    </div>
+    <div class="step" onclick="markStep(&#39;steps-overview&#39;, 3)">
+      <div class="step-circle">4</div>
+      <div class="step-label">What will change in your wallet?</div>
+    </div>
+    <div class="step" onclick="markStep(&#39;steps-overview&#39;, 4)">
+      <div class="step-circle">5</div>
+      <div class="step-label">Any rules triggered?</div>
+    </div>
+    <div class="step" onclick="markStep(&#39;steps-overview&#39;, 5)">
+      <div class="step-circle">6</div>
+      <div class="step-label">Show result to user</div>
+    </div>
+  </div>
+  <p style="font-size:13px; color: var(--text-muted);">Click each step to walk through the process.</p>
+
+  <div class="callout green">
+    <strong>Good news</strong>
+    <p>All of this is automatic. You don't need to do anything — Rabby runs these checks every single time you approve anything.</p>
+  </div>
+</div>
+
+<!-- LAYERS -->
+<div class="page" id="page-layers">
+  <h2>The 5 Layers of Protection</h2>
+  <p class="page-title-meta">Rabby's fraud detection is built in layers — like an onion of security.</p>
+
+  <div class="card">
+    <h3 style="margin-top:0; color: var(--accent);">Layer 1 — Backend Intelligence</h3>
+    <p>Rabby's servers (<strong>api.rabby.io</strong>) know about millions of addresses, contracts, and dapps. When you start a transaction, Rabby asks: "Hey server, is this address a known scammer?" The server replies with labels like <code>is_scam</code> or <code>is_danger</code>.</p>
+    <p><strong>Analogy:</strong> Like checking a phone number against a spam database before answering.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0; color: var(--accent2);">Layer 2 — Rule Engine</h3>
+    <p>A built-in rulebook with dozens of rules. Each rule checks one specific thing (e.g. "was this contract deployed less than 7 days ago?"). If a rule fires, it assigns a risk level: Warning, Danger, or Forbidden.</p>
+    <p><strong>Analogy:</strong> Like a checklist a pilot runs before takeoff — each item can fail or pass.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0; color: var(--green);">Layer 3 — Action Analysis</h3>
+    <p>Before rules run, Rabby decodes what the transaction is actually doing. Is it a token approval? A swap? A transfer? This decoding enriches the context so rules know exactly what to check.</p>
+    <p><strong>Analogy:</strong> Reading the fine print of a contract before signing it.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0; color: var(--amber);">Layer 4 — Your Personal Lists</h3>
+    <p>You control your own blacklists and whitelists. If you've personally blocked a dapp or address, Rabby will always flag or block it — regardless of what the global database says.</p>
+    <p><strong>Analogy:</strong> Your own personal block list on a messaging app.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0; color: var(--red);">Layer 5 — UI Warnings</h3>
+    <p>All the results are displayed clearly in the approval screen — color-coded by severity. You see exactly which rule triggered and why. You can inspect each warning and choose to proceed or cancel.</p>
+    <p><strong>Analogy:</strong> The warning labels on medicine — you see the risks, then decide.</p>
+  </div>
+
+  <div class="callout amber">
+    <strong>Important</strong>
+    <p>FORBIDDEN level blocks the action completely. DANGER shows a strong warning. WARNING is a yellow caution. SAFE means no issues found. These stack — if any rule is FORBIDDEN, you cannot proceed.</p>
+  </div>
+</div>
+
+<!-- API -->
+<div class="page" id="page-api">
+  <h2>The Backend API</h2>
+  <p class="page-title-meta">Rabby talks to its servers to get intelligence about addresses and transactions.</p>
+
+  <div class="callout">
+    <strong>What is the API?</strong>
+    <p>An API is just Rabby's way of asking a remote server questions. Every time you start a transaction, Rabby sends a few quick requests to <code>api.rabby.io</code> and gets answers back — usually in under a second.</p>
+  </div>
+
+  <h3>The 5 main questions Rabby asks</h3>
+
+  <div class="tabs">
+    <div class="tab-btns">
+      <button class="tab-btn" onclick="switchTab(&#39;api-tabs&#39;, &#39;parse&#39;)">parseTx</button>
+      <button class="tab-btn" onclick="switchTab(&#39;api-tabs&#39;, &#39;preexec&#39;)">preExecTx</button>
+      <button class="tab-btn" onclick="switchTab(&#39;api-tabs&#39;, &#39;addrdesc&#39;)">addrDesc</button>
+      <button class="tab-btn" onclick="switchTab(&#39;api-tabs&#39;, &#39;transfer&#39;)">hasTransfer</button>
+      <button class="tab-btn active" onclick="switchTab(&#39;api-tabs&#39;, &#39;cex&#39;)">checkCEX</button>
+    </div>
+
+    <div class="tab-panel" id="tab-api-parse">
+      <div class="card">
+        <strong>parseTx — "What kind of transaction is this?"</strong>
+        <p>Rabby sends the raw transaction data and the server classifies it: is it a token approval? A swap? A simple ETH send? This label determines which rules to run later.</p>
+        <p style="margin-top:8px; font-size:13px;"><strong>Returns:</strong> action type like <code>token_approve</code>, <code>send_token</code>, <code>contract_call</code></p>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-api-preexec">
+      <div class="card">
+        <strong>preExecTx — "What will happen if I sign this?"</strong>
+        <p>This simulates the transaction without actually sending it. The server runs the transaction on a copy of the blockchain and tells Rabby what would change in your wallet — how much token you'd lose or gain.</p>
+        <p style="margin-top:8px; font-size:13px;"><strong>Returns:</strong> success/fail + balance changes for each token</p>
+        <div class="callout green" style="margin-top:10px;">
+          <strong>Why this matters</strong>
+          <p>You can see exactly what tokens leave your wallet before you sign. If a "swap" is secretly draining all your tokens, Rabby catches it here.</p>
+        </div>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-api-addrdesc">
+      <div class="card">
+        <strong>addrDesc — "Who is this address?"</strong>
+        <p>Rabby asks the server about the recipient address: Is it a known scam? Is it a centralized exchange? Is it a smart contract? This lookup returns labels that trigger the address risk checks.</p>
+        <p style="margin-top:8px; font-size:13px;"><strong>Returns:</strong> <code>is_scam</code>, <code>is_danger</code>, <code>cex info</code>, <code>contract info</code></p>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-api-transfer">
+      <div class="card">
+        <strong>hasTransfer — "Have I sent to this address before?"</strong>
+        <p>Rabby checks your transfer history across all chains. If you've never sent to this address before, that's a yellow flag — you might have made a typo or be falling for a fake address scam.</p>
+        <p style="margin-top:8px; font-size:13px;"><strong>Returns:</strong> <code>has_transfer: true/false</code></p>
+      </div>
+    </div>
+    <div class="tab-panel active" id="tab-api-cex">
+      <div class="card">
+        <strong>checkCEX — "Can this exchange accept this token?"</strong>
+        <p>If you're sending to a centralized exchange (like Binance), Rabby checks whether that exchange actually supports deposits of the specific token on the specific chain. Some exchanges don't — and sending there loses your tokens forever.</p>
+        <p style="margin-top:8px; font-size:13px;"><strong>Returns:</strong> a warning message if the deposit is not supported</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RULE ENGINE -->
+<div class="page" id="page-engine">
+  <h2>The Rule Engine</h2>
+  <p class="page-title-meta">Rabby's automated rulebook that decides how risky a transaction is.</p>
+
+  <div class="callout">
+    <strong>Think of it like a credit score check</strong>
+    <p>The rule engine runs a list of checks on the transaction. Each check either passes or fails. Failures are assigned a severity level. The most severe level "wins" and determines what Rabby shows you.</p>
+  </div>
+
+  <h3>The 4 Risk Levels</h3>
+  <div class="card-row">
+    <div class="card" style="border-left: 3px solid var(--green);">
+      <span class="level-badge level-safe">SAFE</span>
+      <div class="stat-label" style="margin-top:8px;">No problems found. Green light to proceed.</div>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--amber);">
+      <span class="level-badge level-warning">WARNING</span>
+      <div class="stat-label" style="margin-top:8px;">Something looks unusual. Be careful and double-check.</div>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--red);">
+      <span class="level-badge level-danger">DANGER</span>
+      <div class="stat-label" style="margin-top:8px;">High risk detected. Strong recommendation to cancel.</div>
+    </div>
+    <div class="card" style="border-left: 3px solid #666;">
+      <span class="level-badge level-forbidden">FORBIDDEN</span>
+      <div class="stat-label" style="margin-top:8px;">Hard block. Rabby will not let you proceed at all.</div>
+    </div>
+  </div>
+
+  <h3>Priority — the worst level wins</h3>
+  <p>If a transaction triggers 3 WARNING rules and 1 FORBIDDEN rule, Rabby shows FORBIDDEN. The highest severity always takes priority:</p>
+  <pre>FORBIDDEN &gt; DANGER &gt; WARNING &gt; SAFE</pre>
+
+  <h3>Example rules in action</h3>
+  <table class="compare-table">
+    <thead>
+      <tr><th>Rule check</th><th>If triggered</th><th>Severity</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Contract deployed less than 7 days ago</td>
+        <td>New contract — could be a fresh scam</td>
+        <td><span class="badge-amber">WARNING</span></td>
+      </tr>
+      <tr>
+        <td>Approving tokens to an EOA (regular wallet, not a contract)</td>
+        <td>Very suspicious — normal dapps never need this</td>
+        <td><span class="badge-red">DANGER</span></td>
+      </tr>
+      <tr>
+        <td>Contract flagged by Rabby team</td>
+        <td>Known malicious contract</td>
+        <td><span class="badge-red">DANGER</span></td>
+      </tr>
+      <tr>
+        <td>Address is on your personal blacklist</td>
+        <td>You've explicitly blocked this address</td>
+        <td><span class="badge-red">FORBIDDEN</span></td>
+      </tr>
+      <tr>
+        <td>Low contract trust value</td>
+        <td>Very little community trust — treat with caution</td>
+        <td><span class="badge-amber">WARNING</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <strong>You can ignore warnings (except FORBIDDEN)</strong>
+    <p>If Rabby shows a WARNING or DANGER, you can click "Confirm anyway" to proceed. But FORBIDDEN is absolute — Rabby will block the action no matter what.</p>
+  </div>
+</div>
+
+<!-- ADDRESS CHECKS -->
+<div class="page" id="page-address">
+  <h2>Address Risk Detection</h2>
+  <p class="page-title-meta">5 specific checks run whenever you type a recipient address.</p>
+
+  <div class="callout">
+    <strong>When does this run?</strong>
+    <p>The moment you paste or type an address into the "Send" screen, Rabby automatically checks it. You'll see a colored banner if anything looks wrong — before you even hit send.</p>
+  </div>
+
+  <h3>The 5 risk types (in order of severity)</h3>
+
+  <div class="flow-diagram">
+    <div class="flow-box" id="risk1" onclick="highlightRisk(&#39;risk1&#39;)">
+      <div class="tag">Risk type 5 — highest priority</div>
+      <div class="name">FORBIDDEN TIP</div>
+      <div class="desc">The rule engine itself has flagged this address as forbidden. Overrides everything else.</div>
+    </div>
+    <div class="flow-arrow">|</div>
+    <div class="flow-box" id="risk2" onclick="highlightRisk(&#39;risk2&#39;)">
+      <div class="tag">Risk type 2 — very high</div>
+      <div class="name">SCAM ADDRESS</div>
+      <div class="desc">This address is in Rabby's global scam database. Known bad actor.</div>
+    </div>
+    <div class="flow-arrow">|</div>
+    <div class="flow-box" id="risk3" onclick="highlightRisk(&#39;risk3&#39;)">
+      <div class="tag">Risk type 3 — high</div>
+      <div class="name">CONTRACT ADDRESS</div>
+      <div class="desc">You're sending to a smart contract, not a regular wallet. Usually fine for dapps, but unexpected in a plain token send.</div>
+    </div>
+    <div class="flow-arrow">|</div>
+    <div class="flow-box" id="risk4" onclick="highlightRisk(&#39;risk4&#39;)">
+      <div class="tag">Risk type 1 — medium</div>
+      <div class="name">NEVER SENT BEFORE</div>
+      <div class="desc">You've never sent to this address before. Could be a typo or clipboard hijack attack.</div>
+    </div>
+    <div class="flow-arrow">|</div>
+    <div class="flow-box" id="risk5" onclick="highlightRisk(&#39;risk5&#39;)">
+      <div class="tag">Risk type 4 — low</div>
+      <div class="name">CEX NO DEPOSIT</div>
+      <div class="desc">This is a centralized exchange address that doesn't accept this specific token. Sending here = permanent loss.</div>
+    </div>
+  </div>
+
+  <div class="callout green" style="margin-top:16px;">
+    <strong>Clipboard hijack protection</strong>
+    <p>The "Never sent before" check helps protect against malware that silently replaces your copied address with an attacker's address. Always double-check the address you're sending to!</p>
+  </div>
+</div>
+
+<!-- SIGN TX FLOW -->
+<div class="page" id="page-signtx">
+  <h2>Signing a Transaction — Step by Step</h2>
+  <p class="page-title-meta">What happens in the background when you click "Sign" on a transaction.</p>
+
+  <div class="callout">
+    <strong>It's fast — all 6 steps happen in under 2 seconds</strong>
+    <p>Steps 1 and 2 run at the same time (in parallel). Steps 3-6 happen one after another once the first two finish.</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab-btns">
+      <button class="tab-btn" onclick="switchTab(&#39;tx-tabs&#39;, &#39;step1&#39;)">Step 1+2</button>
+      <button class="tab-btn" onclick="switchTab(&#39;tx-tabs&#39;, &#39;step3&#39;)">Step 3</button>
+      <button class="tab-btn" onclick="switchTab(&#39;tx-tabs&#39;, &#39;step4&#39;)">Step 4</button>
+      <button class="tab-btn" onclick="switchTab(&#39;tx-tabs&#39;, &#39;step5&#39;)">Step 5</button>
+      <button class="tab-btn active" onclick="switchTab(&#39;tx-tabs&#39;, &#39;step6&#39;)">Step 6</button>
+    </div>
+
+    <div class="tab-panel" id="tab-tx-step1">
+      <div class="card">
+        <strong>Steps 1 &amp; 2: Ask the server two questions at once</strong>
+        <p><strong>parseTx</strong> — "What type of action is this transaction?"<br>The server reads the transaction data and classifies it: token approval, token send, contract call, etc.</p>
+        <hr class="section-divider">
+        <p><strong>preExecTx</strong> — "What will this transaction do to my balance?"<br>The server simulates the transaction and returns a preview: +0.5 ETH, -100 USDC, etc.</p>
+        <div class="callout amber" style="margin-top:10px;">
+          <strong>These run in parallel</strong>
+          <p>Both requests fire at the same time so you don't have to wait twice as long.</p>
+        </div>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-tx-step3">
+      <div class="card">
+        <strong>Step 3: Decode the action locally</strong>
+        <p>Using the data from Step 1, Rabby's local code (the <code>rabby-action</code> package) converts the raw transaction into a structured, readable format: "This is a token approval for 1000 USDC to contract 0xABC..."</p>
+        <p>This structured format is what the rule engine will read in Step 6.</p>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-tx-step4">
+      <div class="card">
+        <strong>Step 4: Fetch extra data needed for rules</strong>
+        <p>Some rules need more information than what's in the transaction itself. For example:</p>
+        <ul>
+          <li>How old is the contract? (deploy time)</li>
+          <li>What is the contract's trust score? (trust value)</li>
+          <li>Is this address on the user's whitelist?</li>
+          <li>Has this dapp been approved before?</li>
+        </ul>
+        <p>All this extra data is fetched here and bundled with the action data.</p>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-tx-step5">
+      <div class="card">
+        <strong>Step 5: Build the context object</strong>
+        <p>All the data from steps 1-4 is assembled into one big "context" object — a complete picture of the transaction for the rule engine to evaluate.</p>
+        <p>Think of it like filling out a form with everything known about the transaction, so the engine can answer: "Is this safe?"</p>
+      </div>
+    </div>
+    <div class="tab-panel active" id="tab-tx-step6">
+      <div class="card">
+        <strong>Step 6: Run the rule engine</strong>
+        <p>The context object is fed into the Security Engine. It runs through every applicable rule and returns a list of results — each with a level: SAFE, WARNING, DANGER, or FORBIDDEN.</p>
+        <p>The UI then shows the worst result prominently and lists all triggered rules so you can inspect them.</p>
+        <div class="callout red" style="margin-top:10px;">
+          <strong>This is the final verdict</strong>
+          <p>If the result is FORBIDDEN, the Confirm button is disabled. If it's DANGER, a strong warning appears. You always see exactly which rule triggered and why.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- USER DATA -->
+<div class="page" id="page-userdata">
+  <h2>Your Personal Lists</h2>
+  <p class="page-title-meta">You have full control to block or trust specific addresses, contracts, and dapps.</p>
+
+  <div class="callout">
+    <strong>Local + personal</strong>
+    <p>Your personal lists are stored locally on your device. They are NOT shared with anyone. They are always checked alongside the global database — your personal rules take effect every time you use Rabby.</p>
+  </div>
+
+  <h3>Three types of lists</h3>
+
+  <div class="card-row">
+    <div class="card">
+      <strong>Dapp Origins</strong>
+      <p style="margin-top:8px;">Block or trust entire websites. If you block <code>scamsite.com</code>, Rabby will always warn you when connecting to that site.</p>
+    </div>
+    <div class="card">
+      <strong>Contracts</strong>
+      <p style="margin-top:8px;">Block or whitelist specific smart contracts. A blocked contract gets FORBIDDEN status when you interact with it.</p>
+    </div>
+    <div class="card">
+      <strong>Addresses</strong>
+      <p style="margin-top:8px;">Block or whitelist wallet addresses. Whitelisted addresses skip some checks — useful for addresses you send to often.</p>
+    </div>
+  </div>
+
+  <h3>Send Protection Whitelist</h3>
+  <div class="card">
+    <p>There's a special separate whitelist just for sending tokens. If enabled, you can only send to addresses on your approved list. This protects against accidental sends and malware attacks.</p>
+    <div class="callout amber" style="margin-top:10px;">
+      <strong>Note from the source code</strong>
+      <p>The whitelist toggle in the UI is currently always-on in the code (<code>isWhitelistEnabled()</code> always returns <code>true</code>), regardless of the toggle setting. This is a known quirk in the current version.</p>
+    </div>
+  </div>
+
+  <h3>Approvelist — Dapp Action Whitelist</h3>
+  <div class="card">
+    <p>There's also a global JSON file of approved dapp actions maintained by the Rabby team. This is updated via GitHub automation — the team can push updates at any time to approve or revoke specific dapp actions at scale.</p>
+  </div>
+</div>
+
+<!-- SIMULATOR -->
+<div class="page" id="page-simulator">
+  <h2>Risk Simulator</h2>
+  <p class="page-title-meta">Toggle different risk factors and see what Rabby's verdict would be.</p>
+
+  <div class="callout">
+    <strong>This is a simplified model</strong>
+    <p>Real Rabby uses dozens of rules. This simulator demonstrates the priority logic using a few key factors.</p>
+  </div>
+
+  <div class="risk-simulator">
+    <div class="sim-row">
+      <div class="sim-label">Address is on global scam list</div>
+      <div class="toggle" id="tog-scam" onclick="toggleFeature(&#39;scam&#39;)"></div>
+      <div class="sim-status" id="stat-scam">Off</div>
+    </div>
+    <div class="sim-row">
+      <div class="sim-label">Contract deployed less than 7 days ago</div>
+      <div class="toggle" id="tog-new" onclick="toggleFeature(&#39;new&#39;)"></div>
+      <div class="sim-status" id="stat-new">Off</div>
+    </div>
+    <div class="sim-row">
+      <div class="sim-label">Approving tokens to a regular wallet (EOA)</div>
+      <div class="toggle" id="tog-eoa" onclick="toggleFeature(&#39;eoa&#39;)"></div>
+      <div class="sim-status" id="stat-eoa">Off</div>
+    </div>
+    <div class="sim-row">
+      <div class="sim-label">Address is on your personal blacklist</div>
+      <div class="toggle" id="tog-blacklist" onclick="toggleFeature(&#39;blacklist&#39;)"></div>
+      <div class="sim-status" id="stat-blacklist">Off</div>
+    </div>
+    <div class="sim-row">
+      <div class="sim-label">You've never sent to this address before</div>
+      <div class="toggle" id="tog-new-addr" onclick="toggleFeature(&#39;new-addr&#39;)"></div>
+      <div class="sim-status" id="stat-new-addr">Off</div>
+    </div>
+    <div id="sim-result" style="background: rgba(52, 211, 153, 0.1); border-color: var(--green); color: var(--green);">SAFE — No risks detected</div>
+  </div>
+
+  <h3>How to read the verdict</h3>
+  <table class="compare-table" style="margin-top:8px;">
+    <thead><tr><th>Verdict</th><th>What Rabby shows</th><th>Can you proceed?</th></tr></thead>
+    <tbody>
+      <tr><td><span class="level-badge level-safe">SAFE</span></td><td>Green checkmark, no warnings</td><td><span class="badge-green">Yes, freely</span></td></tr>
+      <tr><td><span class="level-badge level-warning">WARNING</span></td><td>Yellow banner, caution message</td><td><span class="badge-amber">Yes, if you choose</span></td></tr>
+      <tr><td><span class="level-badge level-danger">DANGER</span></td><td>Red banner, strong warning</td><td><span class="badge-amber">Yes, "Confirm anyway"</span></td></tr>
+      <tr><td><span class="level-badge level-forbidden">FORBIDDEN</span></td><td>Black banner, button disabled</td><td><span class="badge-red">No — blocked</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SUMMARY -->
+<div class="page" id="page-summary">
+  <h2>Summary</h2>
+  <p class="page-title-meta">The complete picture of how Rabby detects fraud.</p>
+
+  <h3>Coverage by protection layer</h3>
+  <div class="card" style="padding: 24px;">
+    <div class="progress-row">
+      <div class="progress-label"><span>Backend Intelligence (address/contract database)</span><span id="pv1">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="pf1" data-target="90"></div></div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label"><span>Rule Engine (automated rule checks)</span><span id="pv2">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="pf2" data-target="80"></div></div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label"><span>Action Analysis (transaction decoding)</span><span id="pv3">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="pf3" data-target="75"></div></div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label"><span>Personal Lists (your custom rules)</span><span id="pv4">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="pf4" data-target="60"></div></div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label"><span>UI Warnings (human-readable alerts)</span><span id="pv5">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="pf5" data-target="95"></div></div>
+    </div>
+  </div>
+
+  <h3>Key things to remember</h3>
+  <div class="callout green">
+    <strong>Automatic</strong>
+    <p>Every transaction is scanned automatically. You don't configure anything — it just works.</p>
+  </div>
+  <div class="callout">
+    <strong>Multi-layered</strong>
+    <p>5 layers run together: server database + rule engine + transaction decoding + your personal lists + UI display.</p>
+  </div>
+  <div class="callout amber">
+    <strong>Not fully open-source</strong>
+    <p>The actual rule definitions and the server's scam-detection logic are in closed npm packages and private APIs. You can see how Rabby calls them, but not the rules themselves.</p>
+  </div>
+  <div class="callout red">
+    <strong>FORBIDDEN is absolute</strong>
+    <p>If any rule returns FORBIDDEN (personal blacklist, or Rabby's hard blocks), you cannot proceed — no override possible.</p>
+  </div>
+
+  <div class="card" style="margin-top:24px;">
+    <strong>The closed-source parts</strong>
+    <p style="margin-top:8px;">To go deeper, you'd need to inspect these npm packages or find their public GitHub repos:</p>
+    <ul style="margin-top:8px;">
+      <li><code>@rabby-wallet/rabby-security-engine</code> — the actual rule definitions</li>
+      <li><code>@rabby-wallet/rabby-action</code> — full transaction parsing logic</li>
+      <li><code>api.rabby.io</code> backend — scam scoring, contract trust values</li>
+    </ul>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// THEME
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? 'Dark Mode' : 'Light Mode';
+  renderCharts();
+}
+
+// SIDEBAR
+let sidebarHidden = false;
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  sidebarHidden = !sidebarHidden;
+  sidebar.classList.toggle('hidden', sidebarHidden);
+  main.classList.toggle('expanded', sidebarHidden);
+}
+
+// PAGES
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => {
+    if (l.getAttribute('onclick') && l.getAttribute('onclick').includes("'" + id + "'")) {
+      l.classList.add('active');
+    }
+  });
+  window.scrollTo(0, 0);
+  if (id === 'summary') setTimeout(animateProgress, 300);
+}
+
+// TABS
+function switchTab(group, panel) {
+  const container = document.querySelector('#page-' + (group === 'api-tabs' ? 'api' : group === 'tx-tabs' ? 'signtx' : group));
+  if (!container) return;
+  container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const panelEl = document.getElementById('tab-' + (group === 'api-tabs' ? 'api' : 'tx') + '-' + panel);
+  if (panelEl) panelEl.classList.add('active');
+  // find and activate the button
+  container.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + panel + "'")) {
+      b.classList.add('active');
+    }
+  });
+}
+
+// STEPS
+function markStep(containerId, upTo) {
+  const container = document.getElementById(containerId);
+  const steps = container.querySelectorAll('.step');
+  steps.forEach((s, i) => {
+    if (i <= upTo) s.classList.add('done');
+    else s.classList.remove('done');
+  });
+}
+
+// ADDRESS RISK HIGHLIGHT
+function highlightRisk(id) {
+  document.querySelectorAll('.flow-box').forEach(b => b.classList.remove('highlight'));
+  document.getElementById(id).classList.add('highlight');
+}
+
+// RISK SIMULATOR
+const simState = { scam: false, new: false, eoa: false, blacklist: false, 'new-addr': false };
+function toggleFeature(id) {
+  simState[id] = !simState[id];
+  const tog = document.getElementById('tog-' + id);
+  const stat = document.getElementById('stat-' + id);
+  tog.classList.toggle('on', simState[id]);
+  stat.textContent = simState[id] ? 'On' : 'Off';
+  updateSimResult();
+}
+function updateSimResult() {
+  const el = document.getElementById('sim-result');
+  let level = 'SAFE';
+  if (simState['new-addr']) level = 'WARNING';
+  if (simState['new']) level = 'WARNING';
+  if (simState['scam']) level = 'DANGER';
+  if (simState['eoa']) level = 'DANGER';
+  if (simState['blacklist']) level = 'FORBIDDEN';
+
+  const configs = {
+    SAFE: { text: 'SAFE — No risks detected', bg: 'rgba(52,211,153,0.1)', border: 'var(--green)', color: 'var(--green)' },
+    WARNING: { text: 'WARNING — Proceed with caution', bg: 'rgba(251,191,36,0.1)', border: 'var(--amber)', color: 'var(--amber)' },
+    DANGER: { text: 'DANGER — High risk, strongly reconsider', bg: 'rgba(248,113,113,0.1)', border: 'var(--red)', color: 'var(--red)' },
+    FORBIDDEN: { text: 'FORBIDDEN — Action blocked by Rabby', bg: 'rgba(120,120,120,0.15)', border: '#666', color: '#aaa' },
+  };
+  const c = configs[level];
+  el.textContent = c.text;
+  el.style.background = c.bg;
+  el.style.borderColor = c.border;
+  el.style.color = c.color;
+}
+
+// PROGRESS BARS
+function animateProgress() {
+  [1,2,3,4,5].forEach(i => {
+    const fill = document.getElementById('pf' + i);
+    const val = document.getElementById('pv' + i);
+    const target = parseInt(fill.dataset.target);
+    fill.style.width = target + '%';
+    let current = 0;
+    const interval = setInterval(() => {
+      current = Math.min(current + 2, target);
+      val.textContent = current + '%';
+      if (current >= target) clearInterval(interval);
+    }, 20);
+  });
+}
+
+// CHARTS (not used on this page, kept for completeness)
+function renderCharts() {}
+
+window.addEventListener('load', () => {
+  setTimeout(renderCharts, 100);
+});
+</script>
+
+
+<button style="position: fixed; top: 80px; left: 40%; transform: translateX(-50%); z-index: 99999; background-color: rgba(255, 255, 0, 0.8); color: red; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; border-radius: 5px; padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: Arial, sans-serif; box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 5px;">↓↓↓</button><button style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 99999; background-color: rgba(255, 105, 180, 0.3); color: white; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; border-radius: 5px; padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: Arial, sans-serif; box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 5px;">📋</button></body></html>

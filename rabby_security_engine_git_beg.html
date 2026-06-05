@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rabby Wallet — Security Engine</title>
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --sidebar-w: 260px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+  --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+  --accent: #6c8ef7; --accent2: #a78bfa; --green: #34d399;
+  --amber: #fbbf24; --red: #f87171;
+  --tab-active-bg: #6c8ef7; --tab-active-text: #fff;
+  --chart-grid: rgba(255,255,255,0.06);
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
+}
+[data-theme="light"] {
+  --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+  --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+  --accent: #4361ee; --accent2: #7c3aed; --green: #059669;
+  --amber: #d97706; --red: #dc2626;
+  --tab-active-bg: #4361ee; --tab-active-text: #fff;
+  --chart-grid: rgba(0,0,0,0.08);
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.65; }
+
+/* TOP BAR */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 18px; gap: 14px;
+}
+#toggle-sidebar-btn {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 20px; padding: 4px 8px; border-radius: 6px; transition: color var(--transition);
+}
+#toggle-sidebar-btn:hover { color: var(--accent); }
+#topbar h1 { font-size: 16px; font-weight: 700; flex: 1; }
+#topbar h1 span { color: var(--accent); }
+#theme-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+  transition: background var(--transition);
+}
+#theme-btn:hover { background: var(--border); }
+
+/* SIDEBAR */
+#sidebar {
+  position: fixed; top: 52px; left: 0; bottom: 0; width: var(--sidebar-w);
+  background: var(--bg2); border-right: 1px solid var(--border);
+  overflow-y: auto; z-index: 90; transition: transform var(--transition);
+  padding: 16px 0 40px;
+}
+#sidebar.hidden { transform: translateX(calc(-1 * var(--sidebar-w))); }
+.sidebar-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted); padding: 14px 20px 6px;
+}
+.nav-link {
+  display: block; padding: 9px 20px; font-size: 14px; color: var(--text-muted);
+  cursor: pointer; border-left: 3px solid transparent; transition: all var(--transition);
+  user-select: none;
+}
+.nav-link:hover { color: var(--text); background: var(--bg3); }
+.nav-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); font-weight: 600; }
+
+/* MAIN */
+#main {
+  margin-left: var(--sidebar-w); margin-top: 52px; padding: 36px 48px 80px;
+  transition: margin-left var(--transition); max-width: calc(var(--sidebar-w) + 900px);
+}
+#main.expanded { margin-left: 0; }
+.page { display: none; animation: fadeIn .25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CARDS */
+.card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px 24px; margin-bottom: 18px;
+}
+.card-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.card-row .card { flex: 1; min-width: 160px; }
+.stat-val { font-size: 28px; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* CALLOUT */
+.callout {
+  border-left: 3px solid var(--accent); background: var(--bg3);
+  border-radius: var(--radius); padding: 14px 18px; margin-bottom: 18px;
+}
+.callout.green { border-left-color: var(--green); }
+.callout.amber { border-left-color: var(--amber); }
+.callout.red { border-left-color: var(--red); }
+.callout-title { font-weight: 700; margin-bottom: 4px; font-size: 14px; }
+
+/* TABS */
+.tabs { margin-bottom: 18px; }
+.tab-bar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-btn {
+  padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text-muted); cursor: pointer; font-size: 13px;
+  transition: all var(--transition);
+}
+.tab-btn.active { background: var(--tab-active-bg); color: var(--tab-active-text); border-color: var(--tab-active-bg); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* STEPS */
+.steps { display: flex; gap: 0; margin: 24px 0; flex-wrap: wrap; }
+.step {
+  flex: 1; min-width: 90px; text-align: center; position: relative; cursor: pointer;
+  padding-bottom: 12px;
+}
+.step::after {
+  content: ''; position: absolute; top: 18px; left: 60%; right: -10%;
+  height: 2px; background: var(--border); z-index: 0;
+}
+.step:last-child::after { display: none; }
+.step-circle {
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border);
+  background: var(--bg2); display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 8px; font-weight: 700; font-size: 14px; color: var(--text-muted);
+  position: relative; z-index: 1; transition: all var(--transition);
+}
+.step.done .step-circle { background: var(--accent); border-color: var(--accent); color: #fff; }
+.step.done::after { background: var(--accent); }
+.step-label { font-size: 12px; color: var(--text-muted); line-height: 1.3; }
+.step.done .step-label { color: var(--text); }
+
+/* PROGRESS */
+.progress-bar { background: var(--bg3); border-radius: 99px; height: 7px; overflow: hidden; margin: 6px 0 14px; }
+.progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .6s ease; }
+
+/* COMPARE TABLE */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.compare-table th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+.compare-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: var(--bg3); }
+.badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.badge-forbidden { background: rgba(175,22,14,.2); color: #f87171; }
+.badge-danger { background: rgba(236,81,81,.15); color: #f87171; }
+.badge-warning { background: rgba(255,176,32,.15); color: var(--amber); }
+.badge-safe { background: rgba(39,193,147,.15); color: var(--green); }
+.badge-accent { background: rgba(108,142,247,.15); color: var(--accent); }
+
+/* RISK LEVEL BLOCKS */
+.risk-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.risk-card {
+  flex: 1; min-width: 130px; border-radius: var(--radius); padding: 16px 14px;
+  border: 1px solid var(--border); text-align: center;
+}
+.risk-dot { width: 14px; height: 14px; border-radius: 50%; margin: 0 auto 8px; }
+.risk-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.risk-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+/* CHART */
+.chart-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 18px; }
+.chart-wrap h3 { font-size: 14px; color: var(--text-muted); margin-bottom: 14px; font-weight: 600; }
+canvas { display: block; width: 100% !important; }
+
+/* INTERACTIVE */
+.slider-group { margin-bottom: 22px; }
+.slider-group label { font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; margin-bottom: 8px; }
+.slider-group label span { color: var(--accent); font-size: 15px; }
+input[type=range] {
+  width: 100%; -webkit-appearance: none; height: 6px; border-radius: 99px;
+  background: var(--bg3); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg2); cursor: pointer;
+}
+.sim-result {
+  border-radius: var(--radius); padding: 18px 22px; margin-top: 18px;
+  border: 1px solid var(--border); background: var(--bg2); transition: border-color .3s;
+}
+.sim-result.safe { border-color: var(--green); }
+.sim-result.warning { border-color: var(--amber); }
+.sim-result.danger { border-color: var(--red); }
+.sim-result.forbidden { border-color: #AF160E; background: rgba(175,22,14,.07); }
+.sim-result-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.sim-rules { margin-top: 10px; }
+.sim-rule-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.sim-rule-item:last-child { border-bottom: none; }
+.rule-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); min-width: 42px; }
+
+/* SECTION HEADERS */
+h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+h3 { font-size: 16px; font-weight: 700; margin: 20px 0 10px; }
+p { margin-bottom: 14px; color: var(--text); }
+.page-subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+
+/* FLOW DIAGRAM */
+.flow { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+.flow-node {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 13px 18px; font-size: 14px; position: relative;
+}
+.flow-node strong { color: var(--accent); }
+.flow-arrow { text-align: center; color: var(--text-muted); font-size: 18px; line-height: 1.4; }
+.flow-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.flow-row .flow-node { flex: 1; min-width: 120px; border-color: var(--accent2); }
+
+/* ADDRESS RISK */
+.risk-type-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.risk-type-item { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); }
+.risk-priority { font-size: 11px; font-weight: 700; background: var(--bg3); border-radius: 99px; padding: 2px 8px; color: var(--text-muted); white-space: nowrap; margin-top: 2px; }
+.risk-type-body { flex: 1; }
+.risk-type-title { font-weight: 700; font-size: 14px; margin-bottom: 3px; }
+.risk-type-desc { font-size: 13px; color: var(--text-muted); }
+
+@media (max-width: 700px) {
+  #sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
+  #sidebar.visible { transform: translateX(0); }
+  #main { margin-left: 0; padding: 24px 18px 60px; }
+  .steps { flex-direction: column; gap: 10px; }
+  .step::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button id="toggle-sidebar-btn" onclick="toggleSidebar()">&#9776;</button>
+  <h1>Rabby Wallet — <span>Security Engine</span></h1>
+  <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
+</div>
+
+<nav id="sidebar">
+  <div class="sidebar-label">Introduction</div>
+  <div class="nav-link active" onclick="showPage('overview')">What is the Security Engine?</div>
+  <div class="nav-link" onclick="showPage('flow')">How It Works</div>
+
+  <div class="sidebar-label">Core Concepts</div>
+  <div class="nav-link" onclick="showPage('levels')">Risk Levels</div>
+  <div class="nav-link" onclick="showPage('rules')">Rule Categories</div>
+  <div class="nav-link" onclick="showPage('address')">Address Risk Detection</div>
+
+  <div class="sidebar-label">Deeper Look</div>
+  <div class="nav-link" onclick="showPage('simulation')">Pre-Execution Simulation</div>
+  <div class="nav-link" onclick="showPage('userlists')">User-Managed Lists</div>
+  <div class="nav-link" onclick="showPage('override')">Overriding Rules</div>
+
+  <div class="sidebar-label">Explore</div>
+  <div class="nav-link" onclick="showPage('interactive')">Interactive Risk Checker</div>
+  <div class="nav-link" onclick="showPage('summary')">Key Takeaways</div>
+</nav>
+
+<div id="main">
+
+<!-- PAGE: OVERVIEW -->
+<div class="page active" id="page-overview">
+  <h2>What is the Security Engine?</h2>
+  <p class="page-subtitle">Rabby's built-in fraud detection system — a guard that runs before every transaction you sign.</p>
+
+  <div class="callout">
+    <div class="callout-title">Think of it like airport security</div>
+    Every transaction you sign passes through a set of checkpoints. Each checkpoint looks for a specific danger signal. If something looks wrong, Rabby warns you — or blocks you entirely.
+  </div>
+
+  <div class="card-row">
+    <div class="card">
+      <div class="stat-val">70+</div>
+      <div class="stat-label">Distinct security rules</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">5</div>
+      <div class="stat-label">Risk severity levels</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">100%</div>
+      <div class="stat-label">Client-side — runs in your browser extension, never on a remote server</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">6</div>
+      <div class="stat-label">User-managed allow/block lists</div>
+    </div>
+  </div>
+
+  <h3>Why does this matter?</h3>
+  <p>Crypto transactions are irreversible. Once you sign and broadcast a transaction, there is no undo. Scammers exploit this — they create fake dApps, disguise malicious contracts, and craft transaction requests that look legitimate but drain your wallet.</p>
+  <p>Rabby's Security Engine inspects each transaction <strong>before</strong> you sign, checking it against dozens of risk signals sourced from on-chain data, the DeBank API, and your own personal block/allow lists.</p>
+
+  <div class="callout green">
+    <div class="callout-title">Key principle: Client-side evaluation</div>
+    All rules run inside the Rabby browser extension on your own machine. No transaction data is sent to a server for risk assessment — only API calls for data enrichment (like contract metadata) go outward.
+  </div>
+
+  <h3>The package powering it</h3>
+  <div class="card">
+    <p style="margin:0">The engine is a standalone npm package — <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 7px;border-radius:5px;font-size:13px;">@rabby-wallet/rabby-security-engine</code> (v2.0.12). It receives a "context" object assembled from the decoded transaction and API data, runs all enabled rules against it, and returns a list of results — one per rule that fired.</p>
+  </div>
+</div>
+
+<!-- PAGE: FLOW -->
+<div class="page" id="page-flow">
+  <h2>How It Works</h2>
+  <p class="page-subtitle">Follow a transaction from the moment you click "Sign" to when the Security Engine gives its verdict.</p>
+
+  <p>Click any step to walk through the flow:</p>
+
+  <div class="steps" id="flow-steps">
+    <div class="step done" onclick="activateStep(0)">
+      <div class="step-circle">1</div>
+      <div class="step-label">User clicks Sign</div>
+    </div>
+    <div class="step" onclick="activateStep(1)">
+      <div class="step-circle">2</div>
+      <div class="step-label">RPC intercepted</div>
+    </div>
+    <div class="step" onclick="activateStep(2)">
+      <div class="step-circle">3</div>
+      <div class="step-label">Simulation</div>
+    </div>
+    <div class="step" onclick="activateStep(3)">
+      <div class="step-circle">4</div>
+      <div class="step-label">Context built</div>
+    </div>
+    <div class="step" onclick="activateStep(4)">
+      <div class="step-circle">5</div>
+      <div class="step-label">Rules run</div>
+    </div>
+    <div class="step" onclick="activateStep(5)">
+      <div class="step-circle">6</div>
+      <div class="step-label">Results shown</div>
+    </div>
+  </div>
+
+  <div class="card" id="step-detail">
+    <strong>Step 1 — User clicks Sign</strong>
+    <p style="margin-top:8px;margin-bottom:0;">You initiate a transaction or signature from a dApp. This triggers an <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">eth_sendTransaction</code> (or similar) RPC call.</p>
+  </div>
+
+  <h3>The full pipeline</h3>
+  <div class="flow">
+    <div class="flow-node">
+      <strong>1. rpcFlow.ts</strong> — intercepts every <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">eth_*</code> call from dApps. Checks permissions, lock state, then routes to the approval UI.
+    </div>
+    <div class="flow-arrow">&#8595;</div>
+    <div class="flow-node">
+      <strong>2. SignTx.tsx</strong> — the approval window opens. Calls <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">preExecTx()</code> to simulate the transaction against current blockchain state via DeBank API.
+    </div>
+    <div class="flow-arrow">&#8595;</div>
+    <div class="flow-node">
+      <strong>3. formatSecurityEngineContext()</strong> — assembles a rich "context" object. This includes: decoded transaction action, simulated asset changes, chain info, contract metadata, token info, and your personal lists.
+    </div>
+    <div class="flow-arrow">&#8595;</div>
+    <div class="flow-node">
+      <strong>4. SecurityEngineService.execute(ctx)</strong> — passes the context to the Engine. The engine runs all enabled rules against this context.
+    </div>
+    <div class="flow-arrow">&#8595;</div>
+    <div class="flow-node">
+      <strong>5. Engine.run()</strong> — inside <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">@rabby-wallet/rabby-security-engine</code>. Each rule evaluates and emits a result: <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">{id, level, value, enable}</code>.
+    </div>
+    <div class="flow-arrow">&#8595;</div>
+    <div class="flow-node">
+      <strong>6. UI renders results</strong> — each fired rule becomes a <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">SecurityListItem</code>. The highest-priority level across all results determines the overall badge. If any FORBIDDEN rule is active, the Sign button is disabled.
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: LEVELS -->
+<div class="page" id="page-levels">
+  <h2>Risk Levels</h2>
+  <p class="page-subtitle">Every rule that fires reports one of five severity levels. The highest level across all active rules determines what happens to your transaction.</p>
+
+  <div class="risk-row">
+    <div class="risk-card" style="border-color: #AF160E;">
+      <div class="risk-dot" style="background: #AF160E;"></div>
+      <div class="risk-name" style="color:#f87171;">FORBIDDEN</div>
+      <div class="risk-desc">Transaction is blocked. The Sign button is disabled. You cannot proceed unless the rule is permanently disabled in settings.</div>
+    </div>
+    <div class="risk-card" style="border-color: #EC5151;">
+      <div class="risk-dot" style="background: #EC5151;"></div>
+      <div class="risk-name" style="color:#f87171;">DANGER</div>
+      <div class="risk-desc">Strong warning. You can choose to ignore it for this transaction only, but you must consciously accept the risk.</div>
+    </div>
+    <div class="risk-card" style="border-color: #FFB020;">
+      <div class="risk-dot" style="background: #FFB020;"></div>
+      <div class="risk-name" style="color:var(--amber);">WARNING</div>
+      <div class="risk-desc">Caution signal. Easy to dismiss, but still worth reading. Often indicates unusual — not necessarily malicious — behavior.</div>
+    </div>
+    <div class="risk-card" style="border-color: #27C193;">
+      <div class="risk-dot" style="background: #27C193;"></div>
+      <div class="risk-name" style="color:var(--green);">SAFE</div>
+      <div class="risk-desc">Positive reassurance. This rule found something that confirms safety — like the contract being on your whitelist.</div>
+    </div>
+    <div class="risk-card" style="border-color: #B4BDCC;">
+      <div class="risk-dot" style="background: #B4BDCC;"></div>
+      <div class="risk-name" style="color:#B4BDCC;">ERROR</div>
+      <div class="risk-desc">The engine failed to evaluate this rule (e.g., API timeout). Not a positive signal — treat as unknown.</div>
+    </div>
+  </div>
+
+  <h3>Priority order</h3>
+  <div class="callout amber">
+    <div class="callout-title">When multiple rules fire, Rabby picks the worst one</div>
+    Priority: FORBIDDEN &gt; DANGER &gt; WARNING &gt; SAFE &gt; null &gt; ERROR<br/>
+    The overall transaction badge collapses to the single highest-priority level. One FORBIDDEN rule = locked transaction.
+  </div>
+
+  <h3>What does "ignore" mean?</h3>
+  <p>For DANGER and WARNING rules, you can click "Ignore Alert" — this dismisses the rule <em>for the current transaction only</em>. It does not permanently turn off the rule. If you come back to the same transaction later, the rule fires again.</p>
+
+  <div class="callout red">
+    <div class="callout-title">FORBIDDEN cannot be ignored — only disabled</div>
+    If a FORBIDDEN rule fires, the only way to unblock the transaction is to go to Security Settings and permanently disable that rule. Clicking "Ignore" does nothing for FORBIDDEN-level results.
+  </div>
+
+  <h3>Rule enable/disable</h3>
+  <p>Every rule can be permanently disabled via the Rabby security settings page. This calls <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">wallet.ruleEnableStatusChange(id, false)</code> and persists the setting. Be careful — disabling rules reduces your protection.</p>
+</div>
+
+<!-- PAGE: RULES -->
+<div class="page" id="page-rules">
+  <h2>Rule Categories</h2>
+  <p class="page-subtitle">Rules are grouped by the type of action you're performing. Here are the most important checks in each category.</p>
+
+  <div class="tabs">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('rules','approval')">Token Approval</button>
+      <button class="tab-btn" onclick="switchTab('rules','send')">Send Token</button>
+      <button class="tab-btn" onclick="switchTab('rules','swap')">Swap</button>
+      <button class="tab-btn" onclick="switchTab('rules','permit')">Permit / EIP-712</button>
+      <button class="tab-btn" onclick="switchTab('rules','nft')">NFT</button>
+      <button class="tab-btn" onclick="switchTab('rules','global')">Global Rules</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-rules-approval">
+      <div class="callout amber">
+        <div class="callout-title">Why approvals are high-risk</div>
+        Token approvals grant a contract permission to move your tokens. A malicious spender can drain your wallet at any time after approval — even days later.
+      </div>
+      <table class="compare-table">
+        <thead><tr><th>Rule ID</th><th>Level</th><th>What it checks</th></tr></thead>
+        <tbody>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1022</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Spender is an EOA (regular wallet address, not a contract). Legitimate protocols never ask for approvals to a plain wallet.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1024</code></td><td><span class="badge badge-warning">WARNING</span></td><td>Contract deployed less than 3 days ago. New contracts haven't been vetted.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1150</code></td><td><span class="badge badge-warning">WARNING</span></td><td>Spender contract has $0 trust value on DeBank — no users, no liquidity, no history.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1029</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Address is in Rabby's global scam database.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1133</code></td><td><span class="badge badge-safe">SAFE</span></td><td>Contract is on your personal whitelist.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1134</code></td><td><span class="badge badge-forbidden">FORBIDDEN</span></td><td>Contract is on your personal blacklist — hard block.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1039</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Infinite (unlimited) approval amount requested.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tab-rules-send">
+      <div class="callout">
+        <div class="callout-title">Send checks focus on recipient validity</div>
+        Mistakes when sending are common — wrong address, contract address, unsupported CEX deposit address.
+      </div>
+      <table class="compare-table">
+        <thead><tr><th>Rule ID</th><th>Level</th><th>What it checks</th></tr></thead>
+        <tbody>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1016</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Recipient is a token contract address (e.g., the USDC contract itself). Almost always a mistake.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1019</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Recipient contract is not deployed on this chain.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1021</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Sending to a CEX deposit address, but the token is not supported by that CEX. Funds would be lost.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1018</code></td><td><span class="badge badge-warning">WARNING</span></td><td>You (and your top-10 accounts) have never sent to this address on any chain before.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1053</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Sending to the zero address (0x000…). Tokens sent here are permanently destroyed.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1033</code></td><td><span class="badge badge-safe">SAFE</span></td><td>Address is on your personal address whitelist.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tab-rules-swap">
+      <div class="callout amber">
+        <div class="callout-title">Swap risks: fake tokens and slippage manipulation</div>
+        Scammers create tokens that look like real ones. High slippage settings let bots extract value from your trades.
+      </div>
+      <table class="compare-table">
+        <thead><tr><th>Rule ID</th><th>Level</th><th>What it checks</th></tr></thead>
+        <tbody>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1008</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Output receiving address is not your own address — potential theft of swap output.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1009</code></td><td><span class="badge badge-warning">WARNING</span></td><td>Slippage tolerance is set too high — makes you vulnerable to sandwich attacks.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1011</code></td><td><span class="badge badge-danger">DANGER</span></td><td>The token you're receiving is flagged by DeBank as fake or a scam token.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1012</code></td><td><span class="badge badge-warning">WARNING</span></td><td>Price impact exceeds acceptable threshold — you're getting a bad deal.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tab-rules-permit">
+      <div class="callout red">
+        <div class="callout-title">Permit signatures are especially dangerous</div>
+        Unlike approvals (which are on-chain), Permit/EIP-712 signatures are off-chain. You sign a message — no gas, no transaction — but the resulting signature can be used by anyone who holds it to move your tokens. Scammers often disguise permit requests as harmless "verify wallet" popups.
+      </div>
+      <table class="compare-table">
+        <thead><tr><th>Rule ID</th><th>Level</th><th>What it checks</th></tr></thead>
+        <tbody>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1092</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Permit spender is an EOA, not a contract.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1104</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Unlimited permit amount — the spender can take everything.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1103</code></td><td><span class="badge badge-warning">WARNING</span></td><td>Permit expiry is very far in the future — long window for abuse.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1062</code></td><td><span class="badge badge-danger">DANGER</span></td><td>You're signing for a different chain than the one you're connected to — potential replay attack.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1060</code></td><td><span class="badge badge-danger">DANGER</span></td><td>EIP-712 domain name doesn't match the dApp's actual origin — domain spoofing.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1098</code></td><td><span class="badge badge-warning">WARNING</span></td><td>You've never interacted with this contract before.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tab-rules-nft">
+      <table class="compare-table">
+        <thead><tr><th>Rule ID</th><th>Level</th><th>What it checks</th></tr></thead>
+        <tbody>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1085</code></td><td><span class="badge badge-danger">DANGER</span></td><td>NFT sale payment goes to an address that's not your own — classic marketplace phishing.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1086</code></td><td><span class="badge badge-danger">DANGER</span></td><td>NFT being sold is flagged as a fake/counterfeit.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1087</code></td><td><span class="badge badge-warning">WARNING</span></td><td>Listed price is significantly below the floor price — you may be underselling.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1114</code></td><td><span class="badge badge-danger">DANGER</span></td><td>The NFT collection itself is flagged as malicious.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1135</code></td><td><span class="badge badge-forbidden">FORBIDDEN</span></td><td>NFT marketplace contract is on your blacklist.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tab-rules-global">
+      <div class="callout">
+        <div class="callout-title">Cross-context rules apply to all transaction types</div>
+      </div>
+      <table class="compare-table">
+        <thead><tr><th>Rule ID</th><th>Level</th><th>What it checks</th></tr></thead>
+        <tbody>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1029</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Rabby's global scam address database — known bad actors.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1037</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Contract source code is not verified/open-source on the block explorer.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1036</code></td><td><span class="badge badge-warning">WARNING</span></td><td>Contract has fewer than 3 total interactions globally — very obscure or brand new.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1055</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Contract is on the Chainalysis sanctions list (OFAC-linked).</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1043</code></td><td><span class="badge badge-danger">DANGER</span></td><td>Transaction destination is a known exploit contract.</td></tr>
+          <tr><td><code style="font-family:var(--font-mono);font-size:12px;">1069</code></td><td><span class="badge badge-warning">WARNING</span></td><td>The dApp's site origin is new or has low reputation.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: ADDRESS RISK -->
+<div class="page" id="page-address">
+  <h2>Address Risk Detection</h2>
+  <p class="page-subtitle">Before you even get to the signing screen, Rabby runs a separate check on the recipient address when you're on the Send page.</p>
+
+  <div class="callout">
+    <div class="callout-title">This is separate from the Security Engine</div>
+    The <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">useAddressRisk</code> hook runs on the Send / Select Address page, before the transaction is constructed. It provides early warnings before you even open the signing dialog.
+  </div>
+
+  <h3>Risk types (by priority)</h3>
+  <div class="risk-type-list">
+    <div class="risk-type-item">
+      <div class="risk-priority" style="background:rgba(175,22,14,.15);color:#f87171;">Priority 5 — Highest</div>
+      <div class="risk-type-body">
+        <div class="risk-type-title">FORBIDDEN TIP</div>
+        <div class="risk-type-desc">A CEX or protocol explicitly forbids deposits of this specific token to this address. Sending would permanently lose your funds.</div>
+      </div>
+    </div>
+    <div class="risk-type-item">
+      <div class="risk-priority" style="background:rgba(236,81,81,.12);color:#f87171;">Priority 2 — High</div>
+      <div class="risk-type-body">
+        <div class="risk-type-title">SCAM ADDRESS</div>
+        <div class="risk-type-desc">DeBank's API returned <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">is_danger: true</code> or <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">is_scam: true</code> for this address.</div>
+      </div>
+    </div>
+    <div class="risk-type-item">
+      <div class="risk-priority" style="background:rgba(108,142,247,.12);color:var(--accent);">Priority 3 — Medium</div>
+      <div class="risk-type-body">
+        <div class="risk-type-title">CONTRACT ADDRESS</div>
+        <div class="risk-type-desc">The recipient is a smart contract (not a multisig). Sending tokens directly to a contract is usually a mistake — they may not be recoverable.</div>
+      </div>
+    </div>
+    <div class="risk-type-item">
+      <div class="risk-priority">Priority 4 — Low</div>
+      <div class="risk-type-body">
+        <div class="risk-type-title">CEX NO DEPOSIT</div>
+        <div class="risk-type-desc">The address belongs to a centralized exchange that does not accept direct deposits (e.g., it's a withdrawal-only address).</div>
+      </div>
+    </div>
+    <div class="risk-type-item">
+      <div class="risk-priority">Priority 1 — Lowest</div>
+      <div class="risk-type-body">
+        <div class="risk-type-title">NEVER SEND</div>
+        <div class="risk-type-desc">Neither you nor your top-10 accounts (by balance) have ever sent to this address on any chain. A soft warning — not necessarily dangerous, just unfamiliar.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Data sources used</h3>
+  <div class="card-row">
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:6px;font-size:14px;">addrDesc()</div>
+      <div style="font-size:13px;color:var(--text-muted);">DeBank API — returns contract type, CEX info, scam/danger flags for the recipient address.</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:6px;font-size:14px;">hasTransferAllChain()</div>
+      <div style="font-size:13px;color:var(--text-muted);">Checks if any of your top-10 accounts has ever sent to this address, across all chains. Runs with 5 parallel workers, 3-second timeout.</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:6px;font-size:14px;">checkTokenDepositForbidden()</div>
+      <div style="font-size:13px;color:var(--text-muted);">Protocol-specific check: is this token forbidden at this specific deposit address?</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: SIMULATION -->
+<div class="page" id="page-simulation">
+  <h2>Pre-Execution Simulation</h2>
+  <p class="page-subtitle">Before any rules run, Rabby simulates your transaction to see what would actually happen — without broadcasting it to the network.</p>
+
+  <div class="callout green">
+    <div class="callout-title">Like a test drive before you buy</div>
+    The simulation runs your transaction against the current blockchain state and tells you exactly which tokens will move, in which direction, before you sign anything.
+  </div>
+
+  <h3>What gets simulated</h3>
+  <div class="card-row">
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:6px;">Transaction success</div>
+      <div style="font-size:13px;color:var(--text-muted);">Will this transaction revert? If <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">pre_exec.success === false</code>, Rabby shows an execution failure warning independently of security rules.</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:6px;">Asset changes</div>
+      <div style="font-size:13px;color:var(--text-muted);">Which tokens or NFTs will leave your wallet? Which will arrive? The "balance change" preview in the UI comes from here.</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:6px;">Contract interactions</div>
+      <div style="font-size:13px;color:var(--text-muted);">Decoded call data — what functions are being called, with what parameters.</div>
+    </div>
+  </div>
+
+  <h3>How the API call looks</h3>
+  <div class="card" style="background:var(--bg3);">
+    <pre style="font-family:var(--font-mono);font-size:13px;color:var(--text);overflow-x:auto;"><code>wallet.openapi.preExecTx({
+  tx: { ...tx },          // the raw transaction
+  origin,                 // the dApp's URL
+  address: currentAccount.address,
+  updateNonce: true,
+  pending_tx_list: pendingTxs  // other pending txs from same account
+})</code></pre>
+  </div>
+
+  <h3>Why pending transactions matter</h3>
+  <p>If you have pending (unconfirmed) transactions from the same account, they affect the simulation. Rabby passes the full pending list so the simulation can correctly predict the state after all pending txs settle.</p>
+
+  <div class="callout amber">
+    <div class="callout-title">Simulation runs via the DeBank API</div>
+    This is one of the few parts that talks to an external server. The transaction data is sent to DeBank's simulation endpoint. Your API key (a UUID generated once and stored locally) is included in the request.
+  </div>
+
+  <h3>Simulation feeds the Security Engine</h3>
+  <p>The simulated results — token changes, decoded actions — become part of the context object that the Security Engine rules check against. For example, rules that detect "infinite approval amounts" read the decoded approval amount from the simulation, not from the raw transaction bytes.</p>
+</div>
+
+<!-- PAGE: USER LISTS -->
+<div class="page" id="page-userlists">
+  <h2>User-Managed Lists</h2>
+  <p class="page-subtitle">Your personal allow and block lists. Rules check these lists directly — they're the most reliable signal because you set them yourself.</p>
+
+  <div class="card-row">
+    <div class="card" style="border-color:var(--green);">
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Whitelists</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">originWhitelist</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">dApp URLs you trust completely.</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">contractWhitelist</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Smart contract addresses you trust, keyed by address + chain ID.</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">addressWhitelist</div>
+      <div style="font-size:13px;color:var(--text-muted);">Recipient wallet addresses you trust.</div>
+    </div>
+    <div class="card" style="border-color:var(--red);">
+      <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Blacklists</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">originBlacklist</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">dApp URLs you've blocked.</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">contractBlacklist</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Contracts that will trigger FORBIDDEN — chain-scoped.</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">addressBlacklist</div>
+      <div style="font-size:13px;color:var(--text-muted);">Recipient addresses that are hard-blocked.</div>
+    </div>
+  </div>
+
+  <h3>Chain-scoping for contracts</h3>
+  <div class="callout">
+    Contract list entries store both the address <em>and</em> the chain ID. The same address deployed on Ethereum and on Polygon are treated as two separate entries. This matters because the same bytecode is often deployed at the same address on multiple chains, but your trust decision may differ per chain.
+  </div>
+
+  <h3>The Send Whitelist (separate service)</h3>
+  <p>There is also a separate send-specific whitelist managed by <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">whitelist.ts</code>. When enabled, any send to an address not on this list requires explicit confirmation. Notably, this service is always enabled in the current codebase — the enable/disable toggle is hardcoded to <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">true</code>.</p>
+
+  <h3>How lists are stored</h3>
+  <p>Lists live in the extension's persistent storage via <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">createPersistStore</code>. They're loaded into the Security Engine at startup as part of <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">UserData</code> and passed into every <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">engine.run()</code> call alongside the transaction context.</p>
+</div>
+
+<!-- PAGE: OVERRIDE -->
+<div class="page" id="page-override">
+  <h2>Overriding Rules</h2>
+  <p class="page-subtitle">The Security Engine is not a hard wall — you have control. Here's how the override mechanisms work.</p>
+
+  <div class="tabs">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('override','perdrawer')">Per-Transaction Ignore</button>
+      <button class="tab-btn" onclick="switchTab('override','permdisable')">Permanent Disable</button>
+      <button class="tab-btn" onclick="switchTab('override','proceedall')">Proceed Anyway</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-override-perdrawer">
+      <h3>Clicking "Ignore Alert" in the Rule Drawer</h3>
+      <p>When a rule fires, clicking it opens the <strong>Rule Drawer</strong>. This drawer shows:</p>
+      <ul style="padding-left:20px;margin-bottom:14px;">
+        <li style="margin-bottom:8px;">The rule's severity level with its color-coded icon</li>
+        <li style="margin-bottom:8px;">A human-readable description of why the rule fired</li>
+        <li>An "Ignore Alert" button (for WARNING and DANGER levels)</li>
+      </ul>
+      <p>Clicking "Ignore Alert" adds the rule ID to <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">processedRules</code> in the Redux store. This is <strong>transient</strong> — it only applies to the current transaction and disappears when you close the signing window.</p>
+      <div class="callout red">
+        <div class="callout-title">FORBIDDEN rules cannot be ignored this way</div>
+        For FORBIDDEN-level rules, the "Ignore Alert" button does nothing. The transaction stays blocked.
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-override-permdisable">
+      <h3>Permanently disabling a rule</h3>
+      <p>In Rabby's Security Settings page, you can toggle any rule off. This calls:</p>
+      <div class="card" style="background:var(--bg3);">
+        <pre style="font-family:var(--font-mono);font-size:13px;overflow-x:auto;"><code>wallet.ruleEnableStatusChange(ruleId, false)</code></pre>
+      </div>
+      <p>This persists to the engine's store and survives browser restarts. Once disabled, the rule never fires — even for FORBIDDEN-level checks. This means permanently disabling a FORBIDDEN rule removes the hard block for that threat.</p>
+      <div class="callout amber">
+        <div class="callout-title">Use with caution</div>
+        Permanently disabling rules is irreversible until you manually re-enable them. You might forget you disabled a rule and later wonder why Rabby didn't warn you about a suspicious contract.
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-override-proceedall">
+      <h3>"Proceed Anyway" — ignoring all rules at once</h3>
+      <p>The Redux model has an action called <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">processAllRules(ids)</code> that adds every currently-fired rule ID to the per-transaction ignored set simultaneously. This is what powers the "Proceed Anyway" button in the UI when multiple rules have fired.</p>
+      <p>Again, this is per-transaction and transient. The rules will fire again on the next transaction.</p>
+      <div class="callout">
+        <div class="callout-title">The Redux state model</div>
+        <code style="font-family:var(--font-mono);font-size:12px;">processedRules: string[]</code> lives in the <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">currentTx</code> slice of the <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">securityEngine</code> Redux model. It's cleared by <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">resetCurrentTx()</code> whenever a new transaction starts.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: INTERACTIVE -->
+<div class="page" id="page-interactive">
+  <h2>Interactive Risk Checker</h2>
+  <p class="page-subtitle">Configure a transaction scenario and see which rules would fire.</p>
+
+  <div class="card-row">
+    <div class="card" style="flex:1;min-width:280px;">
+      <h3 style="margin-top:0;">Transaction Parameters</h3>
+
+      <div class="slider-group">
+        <label>Approval Amount <span id="val-amount">Unlimited</span></label>
+        <input type="range" id="sl-amount" min="0" max="3" value="3" oninput="updateSim()"/>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px;">
+          <span>Small</span><span>Medium</span><span>Large</span><span>Unlimited</span>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <label>Contract Age <span id="val-age">Brand New (&lt;1 day)</span></label>
+        <input type="range" id="sl-age" min="0" max="3" value="0" oninput="updateSim()"/>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px;">
+          <span>&lt;1 day</span><span>2 days</span><span>1 week</span><span>1+ year</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Spender Type</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="tab-btn active" id="btn-spender-eoa" onclick="setSpender('eoa')">EOA (wallet)</button>
+          <button class="tab-btn" id="btn-spender-contract" onclick="setSpender('contract')">Contract</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Address Status</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="tab-btn active" id="btn-status-unknown" onclick="setStatus('unknown')">Unknown</button>
+          <button class="tab-btn" id="btn-status-scam" onclick="setStatus('scam')">Known Scam</button>
+          <button class="tab-btn" id="btn-status-white" onclick="setStatus('white')">Whitelisted</button>
+          <button class="tab-btn" id="btn-status-black" onclick="setStatus('black')">Blacklisted</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:4px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Trust Value (DeBank score)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="tab-btn active" id="btn-trust-zero" onclick="setTrust('zero')">$0 (None)</button>
+          <button class="tab-btn" id="btn-trust-low" onclick="setTrust('low')">Low</button>
+          <button class="tab-btn" id="btn-trust-high" onclick="setTrust('high')">High</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;min-width:280px;" id="sim-result-card">
+      <h3 style="margin-top:0;">Security Engine Result</h3>
+      <div id="sim-result" class="sim-result">
+        <div class="sim-result-label" id="sim-overall-label">Overall: DANGER</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;" id="sim-overall-desc">Multiple risk signals detected. Review each rule below.</div>
+        <div class="sim-rules" id="sim-rules-list"></div>
+        <div style="margin-top:14px;font-size:13px;color:var(--text-muted);" id="sim-action-label"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <h3>Rule Severity Distribution for this scenario</h3>
+    <canvas id="chart-rules" height="140"></canvas>
+  </div>
+</div>
+
+<!-- PAGE: SUMMARY -->
+<div class="page" id="page-summary">
+  <h2>Key Takeaways</h2>
+  <p class="page-subtitle">What you should remember about Rabby's Security Engine.</p>
+
+  <div class="callout green">
+    <div class="callout-title">1. It runs entirely on your device</div>
+    The rule evaluation never leaves your browser extension. External APIs (DeBank) are only called to fetch metadata (contract info, scam flags, price data) — the risk decisions are made locally.
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">2. Pre-simulation shows you the outcome before you commit</div>
+    The asset change preview ("you will lose X USDC") is powered by a real transaction simulation, not a guess.
+  </div>
+
+  <div class="callout amber">
+    <div class="callout-title">3. Permit signatures are the sneakiest attack vector</div>
+    Rules 1092, 1104, 1062, 1060 specifically guard against off-chain permit phishing — where you "sign a message" that looks harmless but grants full token access.
+  </div>
+
+  <div class="callout red">
+    <div class="callout-title">4. FORBIDDEN = hard block. Only disabling the rule can bypass it.</div>
+    Per-transaction "ignore" does not work for FORBIDDEN. You must go to settings and permanently disable the rule.
+  </div>
+
+  <h3>Coverage by threat vector</h3>
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:14px;"><span>Token drain via malicious approval</span><span style="color:var(--accent);">Strong</span></div>
+  <div class="progress-bar"><div class="progress-fill" style="width:95%"></div></div>
+
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:14px;"><span>Fake tokens in swaps</span><span style="color:var(--accent);">Strong</span></div>
+  <div class="progress-bar"><div class="progress-fill" style="width:90%"></div></div>
+
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:14px;"><span>Permit / EIP-712 phishing</span><span style="color:var(--accent);">Strong</span></div>
+  <div class="progress-bar"><div class="progress-fill" style="width:88%"></div></div>
+
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:14px;"><span>Sending to wrong / scam address</span><span style="color:var(--accent);">Good</span></div>
+  <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:14px;"><span>NFT marketplace fraud</span><span style="color:var(--accent);">Good</span></div>
+  <div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div>
+
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:14px;"><span>Sanctioned contracts (Chainalysis)</span><span style="color:var(--accent);">Good</span></div>
+  <div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div>
+
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:14px;"><span>Novel / zero-day attack patterns</span><span style="color:var(--text-muted);">Limited</span></div>
+  <div class="progress-bar"><div class="progress-fill" style="width:30%"></div></div>
+
+  <h3>External data sources</h3>
+  <table class="compare-table" style="margin-top:8px;">
+    <thead><tr><th>API Endpoint</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><code style="font-family:var(--font-mono);font-size:12px;">preExecTx()</code></td><td>Transaction simulation, asset change prediction</td></tr>
+      <tr><td><code style="font-family:var(--font-mono);font-size:12px;">addrDesc()</code></td><td>Address type, scam/danger flags</td></tr>
+      <tr><td><code style="font-family:var(--font-mono);font-size:12px;">hasTransferAllChain()</code></td><td>Prior transaction history check</td></tr>
+      <tr><td><code style="font-family:var(--font-mono);font-size:12px;">checkTokenDepositForbidden()</code></td><td>CEX/protocol deposit restriction</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- end #main -->
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let simState = { amount: 3, age: 0, spender: 'eoa', status: 'unknown', trust: 'zero' };
+let currentPage = 'overview';
+
+// ── THEME ──────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.dataset.theme === 'dark';
+  html.dataset.theme = isDark ? 'light' : 'dark';
+  document.getElementById('theme-btn').textContent = isDark ? 'Dark Mode' : 'Light Mode';
+  setTimeout(renderCharts, 50);
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  const isMobile = window.innerWidth <= 700;
+  if (isMobile) {
+    sb.classList.toggle('visible');
+  } else {
+    sb.classList.toggle('hidden');
+    main.classList.toggle('expanded');
+  }
+}
+
+// ── PAGE NAV ───────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + id + "'")) n.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+  currentPage = id;
+  if (id === 'interactive' || id === 'summary') setTimeout(renderCharts, 100);
+  // close mobile sidebar
+  if (window.innerWidth <= 700) document.getElementById('sidebar').classList.remove('visible');
+}
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+function switchTab(group, panel) {
+  const container = document.getElementById('tab-' + group + '-' + panel).closest('.tabs');
+  container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + group + '-' + panel).classList.add('active');
+  container.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + panel + "'")) b.classList.add('active');
+  });
+}
+
+// ── STEPS ──────────────────────────────────────────────────────────────────
+const stepDetails = [
+  { title: 'Step 1 — User clicks Sign', body: 'You initiate a transaction or signature from a dApp. This triggers an <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">eth_sendTransaction</code> (or similar) RPC call to the Rabby extension.' },
+  { title: 'Step 2 — RPC intercepted', body: '<code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">rpcFlow.ts</code> intercepts the call via a <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">PromiseFlow</code> middleware pipeline. It checks: is the method valid? Is the wallet unlocked? Does the dApp have permission? If all checks pass, the approval notification window is opened.' },
+  { title: 'Step 3 — Pre-execution simulation', body: '<code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">preExecTx()</code> is called against the DeBank API. The transaction is simulated against the current blockchain state. Results include whether the tx would succeed, which assets would change, and decoded contract calls.' },
+  { title: 'Step 4 — Context assembly', body: '<code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">formatSecurityEngineContext()</code> builds a rich context object combining: decoded action data, simulation results, chain info, contract metadata from DeBank, token info, and your personal allow/block lists.' },
+  { title: 'Step 5 — Rules run', body: '<code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">SecurityEngineService.execute(ctx)</code> passes the context to <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">Engine.run()</code>. Every enabled rule evaluates and returns a result: <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">{id, level, value, enable}</code>.' },
+  { title: 'Step 6 — Results shown', body: 'Each fired rule becomes a <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">SecurityListItem</code> in the UI. The highest-priority level across all active, non-ignored rules determines the overall badge. If any FORBIDDEN rule is active and not disabled, the Sign button is disabled.' }
+];
+
+function activateStep(n) {
+  const steps = document.querySelectorAll('#flow-steps .step');
+  steps.forEach((s, i) => s.classList.toggle('done', i <= n));
+  const d = stepDetails[n];
+  document.getElementById('step-detail').innerHTML = '<strong>' + d.title + '</strong><p style="margin-top:8px;margin-bottom:0;">' + d.body + '</p>';
+}
+
+// ── INTERACTIVE SIMULATOR ──────────────────────────────────────────────────
+const amountLabels = ['Small', 'Medium', 'Large', 'Unlimited'];
+const ageLabels = ['Brand New (<1 day)', '2 days old', '1 week old', '1+ year old'];
+
+function setSpender(v) {
+  simState.spender = v;
+  ['eoa','contract'].forEach(k => document.getElementById('btn-spender-' + k).classList.toggle('active', k === v));
+  updateSim();
+}
+function setStatus(v) {
+  simState.status = v;
+  ['unknown','scam','white','black'].forEach(k => document.getElementById('btn-status-' + k).classList.toggle('active', k === v));
+  updateSim();
+}
+function setTrust(v) {
+  simState.trust = v;
+  ['zero','low','high'].forEach(k => document.getElementById('btn-trust-' + k).classList.toggle('active', k === v));
+  updateSim();
+}
+
+function updateSim() {
+  simState.amount = parseInt(document.getElementById('sl-amount').value);
+  simState.age = parseInt(document.getElementById('sl-age').value);
+  document.getElementById('val-amount').textContent = amountLabels[simState.amount];
+  document.getElementById('val-age').textContent = ageLabels[simState.age];
+
+  const rules = [];
+
+  // Spender EOA check
+  if (simState.spender === 'eoa') rules.push({ id: '1022', level: 'DANGER', desc: 'Spender is an EOA (wallet address), not a contract' });
+
+  // Amount checks
+  if (simState.amount === 3) rules.push({ id: '1039', level: 'DANGER', desc: 'Infinite (unlimited) approval amount requested' });
+
+  // Age checks
+  if (simState.age === 0) rules.push({ id: '1024', level: 'WARNING', desc: 'Contract deployed less than 3 days ago' });
+  else if (simState.age === 1) rules.push({ id: '1024', level: 'WARNING', desc: 'Contract deployed less than 3 days ago' });
+
+  // Trust value
+  if (simState.trust === 'zero') rules.push({ id: '1150', level: 'WARNING', desc: 'Spender has $0 trust value on DeBank — no history' });
+
+  // Status checks
+  if (simState.status === 'scam') rules.push({ id: '1029', level: 'DANGER', desc: 'Address flagged in Rabby scam database' });
+  if (simState.status === 'black') rules.push({ id: '1134', level: 'FORBIDDEN', desc: 'Contract is on your personal blacklist' });
+  if (simState.status === 'white') rules.push({ id: '1133', level: 'SAFE', desc: 'Contract is on your personal whitelist' });
+
+  // Determine overall level
+  const priority = { FORBIDDEN:5, DANGER:4, WARNING:3, SAFE:2, ERROR:1 };
+  let overall = rules.length ? rules.reduce((a, b) => priority[a.level] >= priority[b.level] ? a : b).level : 'SAFE';
+  if (rules.length === 0) {
+    rules.push({ id: '—', level: 'SAFE', desc: 'No risk signals detected for this scenario' });
+    overall = 'SAFE';
+  }
+
+  // Render
+  const classMap = { FORBIDDEN:'forbidden', DANGER:'danger', WARNING:'warning', SAFE:'safe', ERROR:'' };
+  const colorMap = { FORBIDDEN:'#f87171', DANGER:'#f87171', WARNING:'var(--amber)', SAFE:'var(--green)', ERROR:'#B4BDCC' };
+  const actionMap = {
+    FORBIDDEN: 'Sign button DISABLED. To proceed, you must permanently disable this rule in Security Settings.',
+    DANGER: 'Sign button active but strongly discouraged. You must manually ignore each DANGER rule to proceed.',
+    WARNING: 'Sign button active. Warnings can be dismissed easily.',
+    SAFE: 'No blocking issues. Transaction looks safe to proceed.',
+  };
+
+  const resultEl = document.getElementById('sim-result');
+  resultEl.className = 'sim-result ' + (classMap[overall] || '');
+  document.getElementById('sim-overall-label').innerHTML = 'Overall: <span style="color:' + colorMap[overall] + '">' + overall + '</span>';
+  document.getElementById('sim-overall-desc').textContent = actionMap[overall] || '';
+  document.getElementById('sim-action-label').textContent = rules.length + ' rule(s) evaluated.';
+
+  const rulesList = document.getElementById('sim-rules-list');
+  rulesList.innerHTML = rules.map(r => `
+    <div class="sim-rule-item">
+      <span class="rule-id">${r.id}</span>
+      <span class="badge badge-${r.level.toLowerCase()}">${r.level}</span>
+      <span style="font-size:13px;">${r.desc}</span>
+    </div>`).join('');
+
+  renderRulesChart(rules);
+}
+
+// ── CHARTS ─────────────────────────────────────────────────────────────────
+function getCssVar(v) {
+  return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+}
+
+let lastRules = [];
+function renderRulesChart(rules) {
+  lastRules = rules || lastRules;
+  const canvas = document.getElementById('chart-rules');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.parentElement.clientWidth - 40;
+  const h = 140;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  const levels = ['FORBIDDEN','DANGER','WARNING','SAFE','ERROR'];
+  const colors = { FORBIDDEN:'#AF160E', DANGER:'#EC5151', WARNING:'#FFB020', SAFE:'#27C193', ERROR:'#B4BDCC' };
+  const counts = {};
+  levels.forEach(l => counts[l] = 0);
+  lastRules.forEach(r => { if (counts[r.level] !== undefined) counts[r.level]++; });
+
+  const barW = Math.min(60, (w - 80) / levels.length - 12);
+  const maxCount = Math.max(...Object.values(counts), 1);
+  const barAreaH = h - 40;
+  const startX = (w - levels.length * (barW + 12)) / 2;
+
+  const textColor = getCssVar('--text-muted');
+  const gridColor = getCssVar('--chart-grid');
+
+  // grid
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= maxCount; i++) {
+    const y = 10 + barAreaH - (i / maxCount) * barAreaH;
+    ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(w - 10, y); ctx.stroke();
+  }
+
+  levels.forEach((level, i) => {
+    const x = startX + i * (barW + 12);
+    const count = counts[level];
+    const barH = count > 0 ? Math.max(4, (count / maxCount) * barAreaH) : 0;
+    const y = 10 + barAreaH - barH;
+
+    if (count > 0) {
+      const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+      grad.addColorStop(0, colors[level]);
+      grad.addColorStop(1, colors[level] + '88');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0]);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = textColor;
+    ctx.font = '10px ' + getCssVar('--font-sans');
+    ctx.textAlign = 'center';
+    ctx.fillText(level === 'FORBIDDEN' ? 'FORBID' : level, x + barW / 2, h - 4);
+
+    if (count > 0) {
+      ctx.fillStyle = colors[level];
+      ctx.font = 'bold 12px ' + getCssVar('--font-sans');
+      ctx.fillText(count, x + barW / 2, y - 4);
+    }
+  });
+}
+
+function renderCharts() {
+  if (currentPage === 'interactive') renderRulesChart(lastRules.length ? lastRules : null);
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  updateSim();
+  setTimeout(renderCharts, 100);
+});
+window.addEventListener('resize', () => {
+  if (currentPage === 'interactive') renderRulesChart();
+});
+</script>
+</body>
+</html>
