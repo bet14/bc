@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rabby Wallet — Fraud Detection Deep Dive</title>
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  --radius: 10px;
+  --sidebar-w: 260px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+  --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+  --accent: #6c8ef7; --accent2: #a78bfa; --green: #34d399;
+  --amber: #fbbf24; --red: #f87171;
+  --tab-active-bg: #6c8ef7; --tab-active-text: #fff;
+  --chart-grid: rgba(255,255,255,0.06);
+}
+[data-theme="light"] {
+  --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+  --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+  --accent: #4361ee; --accent2: #7c3aed; --green: #059669;
+  --amber: #d97706; --red: #dc2626;
+  --tab-active-bg: #4361ee; --tab-active-text: #fff;
+  --chart-grid: rgba(0,0,0,0.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background var(--transition), color var(--transition);
+}
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 52px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; padding: 0 20px;
+}
+#topbar h1 { font-size: 15px; font-weight: 700; letter-spacing: .02em; flex: 1; }
+#topbar h1 span { color: var(--accent); }
+.topbar-btn {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); border-radius: 6px; padding: 5px 13px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background var(--transition); white-space: nowrap;
+}
+.topbar-btn:hover { background: var(--border); }
+#toggle-sidebar-btn { font-size: 16px; padding: 5px 10px; }
+#layout { display: flex; margin-top: 52px; min-height: calc(100vh - 52px); }
+#sidebar {
+  width: var(--sidebar-w); min-width: var(--sidebar-w);
+  background: var(--bg2); border-right: 1px solid var(--border);
+  position: fixed; top: 52px; left: 0; bottom: 0;
+  overflow-y: auto; padding: 16px 0;
+  transition: transform var(--transition);
+  z-index: 90;
+}
+#sidebar.hidden { transform: translateX(-260px); }
+.sidebar-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  color: var(--text-muted); padding: 14px 20px 6px;
+  text-transform: uppercase;
+}
+.nav-link {
+  display: block; padding: 8px 20px;
+  color: var(--text-muted); text-decoration: none;
+  font-size: 13px; font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: all var(--transition); cursor: pointer;
+}
+.nav-link:hover { color: var(--text); background: var(--bg3); }
+.nav-link.active { color: var(--accent); border-left-color: var(--accent); font-weight: 700; background: var(--bg3); }
+#main {
+  margin-left: var(--sidebar-w);
+  padding: 36px 48px 80px;
+  max-width: calc(var(--sidebar-w) + 900px);
+  width: 100%;
+  transition: margin-left var(--transition);
+}
+#main.expanded { margin-left: 0; }
+.page { display: none; animation: fadein 0.3s ease; }
+.page.active { display: block; }
+@keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+h2 span { color: var(--accent); }
+.subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; }
+h3 { font-size: 15px; font-weight: 700; margin: 24px 0 10px; color: var(--text); }
+p { color: var(--text-muted); font-size: 14px; line-height: 1.7; margin-bottom: 12px; }
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px;
+}
+.card-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.card-row .card { flex: 1; min-width: 160px; }
+.stat-val { font-size: 28px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.callout {
+  border-left: 3px solid var(--accent); background: var(--bg3);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px 18px; margin-bottom: 16px; font-size: 13px; line-height: 1.6; color: var(--text-muted);
+}
+.callout.green { border-left-color: var(--green); }
+.callout.amber { border-left-color: var(--amber); }
+.callout.red { border-left-color: var(--red); }
+.callout strong { color: var(--text); }
+.tabs { display: flex; gap: 6px; margin-bottom: 0; flex-wrap: wrap; }
+.tab-btn {
+  padding: 7px 16px; border-radius: 6px 6px 0 0;
+  background: var(--bg3); border: 1px solid var(--border); border-bottom: none;
+  color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all var(--transition);
+}
+.tab-btn.active { background: var(--tab-active-bg); color: var(--tab-active-text); border-color: var(--tab-active-bg); }
+.tab-panel { display: none; background: var(--bg2); border: 1px solid var(--border); border-radius: 0 var(--radius) var(--radius) var(--radius); padding: 20px 24px; margin-bottom: 20px; }
+.tab-panel.active { display: block; }
+pre {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px;
+  overflow-x: auto; font-family: var(--font-mono); font-size: 12.5px;
+  line-height: 1.6; color: var(--text); margin: 10px 0 16px;
+  white-space: pre;
+}
+code { font-family: var(--font-mono); font-size: 12px; color: var(--accent2); background: var(--bg3); padding: 2px 6px; border-radius: 4px; }
+.badge {
+  display: inline-block; padding: 3px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; margin-left: 6px;
+}
+.badge-green { background: rgba(52,211,153,.15); color: var(--green); }
+.badge-amber { background: rgba(251,191,36,.15); color: var(--amber); }
+.badge-red { background: rgba(248,113,113,.15); color: var(--red); }
+.badge-accent { background: rgba(108,142,247,.15); color: var(--accent); }
+.badge-black { background: #1a1a1a; color: #e2e8f0; border: 1px solid #444; }
+.level-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; border-radius: var(--radius);
+  border: 1px solid var(--border); margin-bottom: 8px;
+  background: var(--bg2);
+}
+.level-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.level-dot.safe { background: var(--green); }
+.level-dot.warning { background: var(--amber); }
+.level-dot.danger { background: var(--red); }
+.level-dot.forbidden { background: #111; border: 2px solid #888; }
+.level-name { font-weight: 700; font-size: 14px; min-width: 90px; }
+.level-desc { font-size: 13px; color: var(--text-muted); }
+.steps { display: flex; gap: 0; margin: 20px 0; flex-wrap: wrap; }
+.step {
+  flex: 1; min-width: 120px;
+  display: flex; flex-direction: column; align-items: center;
+  position: relative; cursor: pointer; padding-bottom: 12px;
+}
+.step:not(:last-child)::after {
+  content: ''; position: absolute;
+  top: 14px; left: calc(50% + 14px); right: calc(-50% + 14px);
+  height: 2px; background: var(--border); z-index: 0;
+}
+.step.done:not(:last-child)::after { background: var(--accent); }
+.step-circle {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--text-muted);
+  z-index: 1; transition: all var(--transition);
+}
+.step.done .step-circle { background: var(--accent); border-color: var(--accent); color: #fff; }
+.step-label { font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center; font-weight: 600; }
+.step.done .step-label { color: var(--accent); }
+.compare-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+.compare-table th { background: var(--bg3); padding: 10px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+.compare-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+.compare-table tr:hover td { background: var(--bg3); }
+.chart-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+.chart-wrap h3 { margin-top: 0; margin-bottom: 14px; }
+canvas { display: block; width: 100%; }
+.progress-bar { background: var(--bg3); border-radius: 99px; height: 7px; margin: 6px 0 14px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 1s ease; }
+.flow-box {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 18px; font-family: var(--font-mono); font-size: 12px;
+  line-height: 1.8; margin-bottom: 16px; white-space: pre; overflow-x: auto;
+}
+.arrow { color: var(--accent); font-weight: 700; }
+.layer-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px; margin-bottom: 10px;
+  display: flex; gap: 16px; align-items: flex-start;
+}
+.layer-num {
+  min-width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
+}
+.layer-content h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.layer-content p { margin: 0; font-size: 13px; }
+.risk-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+  margin: 4px;
+}
+.risk-1 { background: rgba(52,211,153,.12); color: var(--green); border: 1px solid rgba(52,211,153,.3); }
+.risk-2 { background: rgba(248,113,113,.12); color: var(--red); border: 1px solid rgba(248,113,113,.3); }
+.risk-3 { background: rgba(251,191,36,.12); color: var(--amber); border: 1px solid rgba(251,191,36,.3); }
+.risk-4 { background: rgba(167,139,250,.12); color: var(--accent2); border: 1px solid rgba(167,139,250,.3); }
+.risk-5 { background: #1a1a1a; color: #ccc; border: 1px solid #444; }
+@media (max-width: 700px) {
+  #sidebar { transform: translateX(-260px); }
+  #sidebar.visible { transform: translateX(0); }
+  #main { margin-left: 0; padding: 24px 18px 60px; }
+  .steps { gap: 8px; }
+  .step:not(:last-child)::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button class="topbar-btn" id="toggle-sidebar-btn" onclick="toggleSidebar()">☰</button>
+  <h1>Rabby Wallet — <span>Fraud Detection</span> Deep Dive</h1>
+  <button class="topbar-btn" id="theme-btn" onclick="toggleTheme()">☀ Light</button>
+</div>
+
+<div id="layout">
+<nav id="sidebar">
+  <div class="sidebar-label">Introduction</div>
+  <a class="nav-link active" onclick="showPage('overview')">Architecture Overview</a>
+  <a class="nav-link" onclick="showPage('engine')">Security Engine</a>
+
+  <div class="sidebar-label">Detection Layers</div>
+  <a class="nav-link" onclick="showPage('signtx')">Transaction Analysis</a>
+  <a class="nav-link" onclick="showPage('address')">Address Risk</a>
+  <a class="nav-link" onclick="showPage('userdata')">User Data & Lists</a>
+
+  <div class="sidebar-label">Infrastructure</div>
+  <a class="nav-link" onclick="showPage('api')">API Endpoints</a>
+  <a class="nav-link" onclick="showPage('redux')">State Management</a>
+  <a class="nav-link" onclick="showPage('fullstack')">Full Stack View</a>
+
+  <div class="sidebar-label">Meta</div>
+  <a class="nav-link" onclick="showPage('closed')">Closed-Source Parts</a>
+  <a class="nav-link" onclick="showPage('references')">References</a>
+</nav>
+
+<main id="main">
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: OVERVIEW
+═══════════════════════════════════════════════════ -->
+<div class="page active" id="page-overview">
+  <h2>Architecture <span>Overview</span></h2>
+  <p class="subtitle">How Rabby's fraud detection components fit together — from user action to risk result.</p>
+
+  <div class="card-row">
+    <div class="card">
+      <div class="stat-val">5</div>
+      <div class="stat-label">Detection Layers</div>
+      <ul style="margin-top:10px;padding-left:16px;font-size:12px;color:var(--text-muted);line-height:1.8">
+        <li>Backend Intelligence (api.rabby.io)</li>
+        <li>Rule Engine (rabby-security-engine)</li>
+        <li>Action Analysis (rabby-action)</li>
+        <li>Local User Data (blacklists/whitelists)</li>
+        <li>UI Layer (SecurityListItem, drawer)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="stat-val">3</div>
+      <div class="stat-label">Core npm Packages</div>
+      <ul style="margin-top:10px;padding-left:16px;font-size:12px;color:var(--text-muted);line-height:1.8">
+        <li><code>@rabby-wallet/rabby-api</code> v0.9.62</li>
+        <li><code>@rabby-wallet/rabby-action</code> v0.1.14</li>
+        <li><code>@rabby-wallet/rabby-security-engine</code> v2.0.12</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="stat-val">4</div>
+      <div class="stat-label">Risk Levels</div>
+      <ul style="margin-top:10px;padding-left:16px;font-size:12px;color:var(--text-muted);line-height:1.8">
+        <li><span style="color:var(--green)">●</span> SAFE — no risk</li>
+        <li><span style="color:var(--amber)">●</span> WARNING — caution, can override</li>
+        <li><span style="color:var(--red)">●</span> DANGER — strong block, can override</li>
+        <li><span style="color:#888">●</span> FORBIDDEN — hard block, cannot override</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="stat-val">5</div>
+      <div class="stat-label">Address Risk Types</div>
+      <ul style="margin-top:10px;padding-left:16px;font-size:12px;color:var(--text-muted);line-height:1.8">
+        <li>FORBIDDEN_TIP (priority 100,000)</li>
+        <li>SCAM_ADDRESS (priority 1,000)</li>
+        <li>CONTRACT_ADDRESS (priority 100)</li>
+        <li>NEVER_SEND (priority 10)</li>
+        <li>CEX_NO_DEPOSIT (priority 1)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Entry point:</strong> Every user action (sign tx, send, connect dApp) passes through <code>rpcFlow.ts</code> → <code>WalletController</code> → then forks into the OpenAPI backend (<code>api.rabby.io</code>) and the local <code>SecurityEngineService</code>.
+  </div>
+
+  <div class="flow-box"><span class="arrow">User Action</span> (sign tx / send / connect dApp)
+        │
+        ▼
+  <span style="color:var(--accent2)">rpcFlow.ts</span>  ──────── middleware chain
+        │
+        ▼
+  <span style="color:var(--accent2)">wallet.ts</span> (WalletController)
+        │
+        ├── <span style="color:var(--green)">openapi</span> (https://api.rabby.io)
+        │     ├── parseTx()       <span style="color:var(--text-muted)">→ classify action type</span>
+        │     ├── preExecTx()     <span style="color:var(--text-muted)">→ simulate tx, balance_change</span>
+        │     └── addrDesc()      <span style="color:var(--text-muted)">→ address metadata (scam, cex, contract…)</span>
+        │
+        └── <span style="color:var(--amber)">SecurityEngineService</span>
+              ├── Engine (rabby-security-engine)
+              │     └── run(rules, userData, context)
+              └── UserData (local blacklist / whitelist)</div>
+
+  <h3>3 Core npm Packages</h3>
+  <table class="compare-table">
+    <thead>
+      <tr><th>Package</th><th>Version</th><th>Role</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>@rabby-wallet/rabby-api</code></td>
+        <td><span class="badge badge-accent">0.9.62</span></td>
+        <td>HTTP client calling <code>https://api.rabby.io</code> — address metadata, tx parsing, pre-execution simulation</td>
+      </tr>
+      <tr>
+        <td><code>@rabby-wallet/rabby-action</code></td>
+        <td><span class="badge badge-accent">0.1.14</span></td>
+        <td>Parse & classify tx actions, fetch required context data, format input for rule engine</td>
+      </tr>
+      <tr>
+        <td><code>@rabby-wallet/rabby-security-engine</code></td>
+        <td><span class="badge badge-accent">2.0.12</span></td>
+        <td>Rule engine — runs risk rules against context, returns <code>Result[]</code> each with a <code>Level</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <strong>Key architectural insight:</strong> The security pipeline is context-driven. Each action type (token approve, send, contract call…) generates its own shaped context object, which the rule engine evaluates against type-specific rules. There is no single "risk score" — instead, each rule produces its own level independently.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: SECURITY ENGINE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-engine">
+  <h2>Security <span>Engine</span></h2>
+  <p class="subtitle">The core rule evaluation component — <code>securityEngine.ts</code> + <code>@rabby-wallet/rabby-security-engine</code>.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('engine','code')">Service Code</button>
+    <button class="tab-btn" onclick="switchTab('engine','levels')">Risk Levels</button>
+    <button class="tab-btn" onclick="switchTab('engine','priority')">Priority Logic</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-engine-code">
+    <p>The <code>SecurityEngineService</code> wraps the npm <code>Engine</code> class. It holds the user's personal lists (blacklists/whitelists) and injects them at runtime into every rule evaluation.</p>
+    <pre>// src/background/service/securityEngine.ts
+
+class SecurityEngineService {
+  store: SecurityEngineStore = {
+    userData: {
+      originBlacklist: [],    // blocked dApp origins
+      originWhitelist: [],
+      contractBlacklist: [],  // blocked contracts
+      contractWhitelist: [],
+      addressBlacklist: [],   // blocked addresses
+      addressWhitelist: [],
+    },
+    rules: [],
+  };
+
+  engine: Engine | null = null;
+
+  init = async () => {
+    this.rules = defaultRules;           // load built-in rules from npm
+    this.engine = new Engine(this.rules, openapiService);
+  };
+
+  execute = async (actionData: ContextActionData) => {
+    return await this.engine.run({
+      ...actionData,
+      userData: this.store.userData,     // inject user's personal lists
+    });
+  };
+}</pre>
+  </div>
+
+  <div class="tab-panel" id="tab-engine-levels">
+    <p>Every rule evaluation returns one of four levels. Higher severity levels override lower ones when displaying the final warning to the user.</p>
+    <div class="level-row">
+      <div class="level-dot safe"></div>
+      <div class="level-name" style="color:var(--green)">SAFE</div>
+      <div class="level-desc">No risk detected. Transaction may proceed without interruption.</div>
+    </div>
+    <div class="level-row">
+      <div class="level-dot warning"></div>
+      <div class="level-name" style="color:var(--amber)">WARNING</div>
+      <div class="level-desc">Possible risk. User is alerted but can confirm and continue.</div>
+    </div>
+    <div class="level-row">
+      <div class="level-dot danger"></div>
+      <div class="level-name" style="color:var(--red)">DANGER</div>
+      <div class="level-desc">High-risk signal. Strong warning shown; user must explicitly override.</div>
+    </div>
+    <div class="level-row">
+      <div class="level-dot forbidden"></div>
+      <div class="level-name" style="color:#aaa">FORBIDDEN</div>
+      <div class="level-desc">Hard block. Cannot override — transaction is rejected entirely.</div>
+    </div>
+    <div class="chart-wrap" style="margin-top:16px">
+      <h3>Level Severity Distribution (illustrative)</h3>
+      <canvas id="levelChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-engine-priority">
+    <p>When multiple rules fire simultaneously, <code>SignTx.tsx</code> applies a waterfall: the highest level present wins.</p>
+    <pre>// src/ui/views/Approval/components/SignTx.tsx
+
+if (enableResults.some(r => r.level === Level.FORBIDDEN))
+  return Level.FORBIDDEN;   // 🔴 hard block, checked first
+
+if (enableResults.some(r => r.level === Level.DANGER))
+  return Level.DANGER;      // 🔴 strong warning
+
+if (enableResults.some(r => r.level === Level.WARNING))
+  return Level.WARNING;     // 🟡 caution</pre>
+
+    <div class="callout green">
+      <strong>User override flow:</strong> When the user clicks <em>"Confirm anyway"</em>, the Redux action <code>processAllRules(ids)</code> marks all rule IDs as acknowledged. The filter <code>enableResults</code> then excludes processed rules, so no blocking level remains — <strong>except FORBIDDEN, which cannot be processed</strong>.
+    </div>
+    <pre>// Redux model: src/ui/models/securityEngine.ts
+
+dispatch.securityEngine.processAllRules(engineResults.map(r => r.id))
+// → processedRules = [all rule ids]
+// → enableResults filters out processed rules → unblocked</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: TRANSACTION ANALYSIS
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-signtx">
+  <h2>Transaction <span>Analysis Flow</span></h2>
+  <p class="subtitle">The 6-step pipeline executed every time a user signs a transaction — <code>SignTx.tsx</code>.</p>
+
+  <div class="steps" id="tx-steps">
+    <div class="step done" onclick="markSteps(1)">
+      <div class="step-circle">1</div>
+      <div class="step-label">parseTx</div>
+    </div>
+    <div class="step done" onclick="markSteps(2)">
+      <div class="step-circle">2</div>
+      <div class="step-label">preExecTx</div>
+    </div>
+    <div class="step" onclick="markSteps(3)">
+      <div class="step-circle">3</div>
+      <div class="step-label">parseAction</div>
+    </div>
+    <div class="step" onclick="markSteps(4)">
+      <div class="step-circle">4</div>
+      <div class="step-label">fetchRequired</div>
+    </div>
+    <div class="step" onclick="markSteps(5)">
+      <div class="step-circle">5</div>
+      <div class="step-label">formatContext</div>
+    </div>
+    <div class="step" onclick="markSteps(6)">
+      <div class="step-circle">6</div>
+      <div class="step-label">executeEngine</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">Click a step to highlight progress.</p>
+
+  <div class="card">
+    <h3 style="margin-top:0">Step 1 &amp; 2 — Parallel API Calls <span class="badge badge-accent">Async</span></h3>
+    <pre>// Step 1: classify what the tx does
+wallet.openapi.parseTx({ chainId, tx, origin, addr })
+→ POST https://api.rabby.io/v1/tx/action
+→ Returns: { action: { type, data }, contract_call, log_id }
+→ action.type: 'token_approve' | 'send_token' | 'contract_call' | …
+
+// Step 2: simulate tx execution
+wallet.openapi.preExecTx({ tx, origin, address, pending_tx_list })
+→ POST https://api.rabby.io/v1/tx/pre_exec
+→ Returns: { pre_exec: { success }, balance_change, gas, pre_exec_version }</pre>
+    <div class="callout">Steps 1 and 2 fire <strong>in parallel</strong> (Promise.all). <code>balance_change</code> from preExecTx is critical — it reveals if the tx would drain the user's wallet.</div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Step 3 — Local Action Parsing</h3>
+    <pre>// rabby-action package (local, no network)
+parseAction({
+  type: 'transaction',
+  data: actionData.action,
+  balanceChange,
+  tx,
+  preExecVersion
+})
+→ Returns: ParsedTransactionActionData  (structured, typed action object)</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Step 4 — Enrichment Data Fetch</h3>
+    <pre>fetchActionRequiredData({
+  actionData, contractCall, chainId, sender,
+  walletProvider,   // includes getWhitelist, isWhitelistEnabled
+  apiProvider       // api.rabby.io calls
+})
+→ Fetches: contract info, trust value, deploy timestamp,
+           whitelist status, token metadata…</pre>
+    <div class="callout amber"><strong>Trust value</strong> is a key signal here — a newly deployed contract or one with low on-chain trust value triggers a rule at this stage.</div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Steps 5 &amp; 6 — Context + Engine</h3>
+    <pre>// Step 5: build context object for rule engine
+formatSecurityEngineContext({
+  type, actionData, requireData, chainId, provider
+})
+→ Returns: ContextActionData   (the typed input for Engine.run)
+
+// Step 6: run all rules
+SecurityEngineService.execute(ctx)
+→ Engine.run({ ...ctx, userData })
+→ Returns: Result[]   — one per fired rule, each with .level</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: ADDRESS RISK
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-address">
+  <h2>Address <span>Risk Detection</span></h2>
+  <p class="subtitle">5 risk types checked when a user enters a recipient address — <code>useAddressRisk.ts</code>.</p>
+
+  <p>Before a user sends tokens or NFTs, the hook <code>useAddressRisk</code> fetches metadata and evaluates 5 risk types, sorted by priority. The highest-priority risk wins display:</p>
+
+  <div class="card-row">
+    <div class="card" style="border-left:3px solid #1a1a1a">
+      <div class="stat-val" style="color:#ccc;font-size:18px">FORBIDDEN_TIP</div>
+      <div class="stat-label">Priority: 100,000 — from Rule Engine</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--red)">
+      <div class="stat-val" style="color:var(--red);font-size:18px">SCAM_ADDRESS</div>
+      <div class="stat-label">Priority: 1,000 — flagged by Rabby/DeBank</div>
+    </div>
+  </div>
+  <div class="card-row">
+    <div class="card" style="border-left:3px solid var(--amber)">
+      <div class="stat-val" style="color:var(--amber);font-size:18px">CONTRACT_ADDRESS</div>
+      <div class="stat-label">Priority: 100 — sending to a contract, not EOA</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <div class="stat-val" style="color:var(--accent);font-size:18px">NEVER_SEND</div>
+      <div class="stat-label">Priority: 10 — no transfer history found</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2)">
+      <div class="stat-val" style="color:var(--accent2);font-size:18px">CEX_NO_DEPOSIT</div>
+      <div class="stat-label">Priority: 1 — CEX that blocks deposits</div>
+    </div>
+  </div>
+
+  <h3>Enum & Priority Code</h3>
+  <pre>// src/ui/hooks/useAddressRisk.ts
+
+enum RiskType {
+  NEVER_SEND       = 1,  // never sent to this address before
+  SCAM_ADDRESS     = 2,  // flagged scam (from addrDesc API)
+  CONTRACT_ADDRESS = 3,  // is a contract, not an EOA
+  CEX_NO_DEPOSIT   = 4,  // CEX that does not support deposits
+  FORBIDDEN_TIP    = 5,  // tip from rule engine (highest priority)
+}
+
+const riskTypePriority = {
+  [RiskType.CEX_NO_DEPOSIT]:    10e-1,   //   1
+  [RiskType.NEVER_SEND]:        10,      //  10
+  [RiskType.CONTRACT_ADDRESS]:  10e1,    // 100
+  [RiskType.SCAM_ADDRESS]:      10e3,    // 1000
+  [RiskType.FORBIDDEN_TIP]:     10e4,    // highest
+};</pre>
+
+  <h3>3 API Calls Behind This Hook</h3>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('addr','desc')">addrDesc()</button>
+    <button class="tab-btn" onclick="switchTab('addr','transfer')">hasTransfer()</button>
+    <button class="tab-btn" onclick="switchTab('addr','cex')">checkCex()</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-addr-desc">
+    <pre>const addrDescRes = await wallet.openapi.addrDesc(toAddress);
+// → GET https://api.rabby.io/v1/address/desc
+// Returns: {
+//   is_danger: boolean,
+//   is_scam:   boolean,
+//   cex: { id: string, is_deposit: boolean },
+//   contract: { [chainId]: { multisig: boolean } }
+// }</pre>
+    <div class="callout red"><strong>is_scam</strong> and <strong>is_danger</strong> flags come from Rabby's backend reputation database (powered by DeBank). If either is true, the address gets <code>SCAM_ADDRESS</code> risk type.</div>
+  </div>
+
+  <div class="tab-panel" id="tab-addr-transfer">
+    <pre>const res = await wallet.openapi.hasTransferAllChain(fromAddr, toAddr);
+// → GET https://api.rabby.io/v1/user/has_transfer
+// Checks across the user's top 10 wallet accounts
+// Returns: { has_transfer: boolean }</pre>
+    <div class="callout"><strong>NEVER_SEND</strong> fires when <code>has_transfer === false</code> for ALL of the user's accounts — meaning they have never sent to this address before on any chain.</div>
+  </div>
+
+  <div class="tab-panel" id="tab-addr-cex">
+    <pre>await wallet.openapi.checkTokenDepositForbidden({
+  chain_id, to_addr, user_addr, id
+});
+// → POST https://api.rabby.io/v1/cex/check_forbidden
+// Returns: { msg: string }  — tip message if token deposit blocked</pre>
+    <div class="callout amber"><strong>CEX_NO_DEPOSIT</strong> catches a common user mistake: sending a token to a CEX address that doesn't support deposits for that specific token/chain.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: USER DATA
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-userdata">
+  <h2>User Data <span>&amp; Personal Lists</span></h2>
+  <p class="subtitle">Local blacklists/whitelists that augment the global rule engine — <code>securityEngine.ts</code> + <code>whitelist.ts</code>.</p>
+
+  <div class="callout">
+    <strong>Two separate whitelist systems:</strong> (1) <code>SecurityEngineService.userData</code> — injected into every rule evaluation; (2) <code>WhitelistService</code> — specifically protects send actions (passed via <code>walletProvider</code> into <code>fetchActionRequiredData</code>).
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('ud','engine')">Engine UserData</button>
+    <button class="tab-btn" onclick="switchTab('ud','whitelist')">WhitelistService</button>
+    <button class="tab-btn" onclick="switchTab('ud','inject')">Runtime Injection</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-ud-engine">
+    <p>Three categories of user-managed lists, each with add/remove operations:</p>
+    <pre>// Origins (dApp domains — e.g. "uniswap.org")
+addOriginWhitelist(origin)   / removeOriginWhitelist(origin)
+addOriginBlacklist(origin)   / removeOriginBlacklist(origin)
+
+// Contracts (address + chainId pair)
+addContractWhitelist(contract)   / removeContractWhitelist(contract)
+addContractBlacklist(contract)   / removeContractBlacklist(contract)
+removeContractBlacklistFromAllChains(contract)  // cross-chain removal
+
+// Addresses (EOA or contract address)
+addAddressWhitelist(address)   / removeAddressWhitelist(address)
+addAddressBlacklist(address)   / removeAddressBlacklist(address)</pre>
+    <div class="callout green">
+      User lists are <strong>persisted locally</strong> in the extension's storage and survive restarts. They are not synced to any server.
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-ud-whitelist">
+    <pre>// src/background/service/whitelist.ts
+
+class WhitelistService {
+  store: {
+    enabled: boolean;
+    whitelists: string[];  // addresses
+  }
+
+  isWhitelistEnabled()  // NOTE: always returns true
+                        // (user toggle is currently ignored in code)
+  isWhitelisted(address: string): boolean
+  addWhitelist(address: string): void
+  removeWhitelist(address: string): void
+}</pre>
+    <div class="callout amber">
+      <strong>Notable finding from source:</strong> <code>isWhitelistEnabled()</code> appears to always return <code>true</code> regardless of the user toggle — meaning the whitelist is always active in the current build.
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-ud-inject">
+    <pre>// WhitelistService is passed as walletProvider in fetchActionRequiredData:
+walletProvider: {
+  getWhitelist:        wallet.getWhitelist,
+  isWhitelistEnabled:  wallet.isWhitelistEnabled,
+  // + other wallet methods…
+}
+
+// SecurityEngine userData is injected at every engine run:
+engine.run({
+  ...actionData,             // the action context
+  userData: this.store.userData  // ← personal lists injected here
+})</pre>
+    <div class="callout">Rules inside the engine can query both <code>userData.addressBlacklist</code> and <code>userData.addressWhitelist</code> to short-circuit or elevate their level — a blacklisted contract will trigger FORBIDDEN regardless of other signals.</div>
+  </div>
+
+  <h3>Coverage by List Type</h3>
+  <div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:2px"><span>Origin (dApp domain)</span><span style="color:var(--text-muted)">Origins blocked / allowed</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:2px"><span>Contract (address + chainId)</span><span style="color:var(--text-muted)">Contract interactions</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:90%"></div></div>
+
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:2px"><span>Address (EOA or contract)</span><span style="color:var(--text-muted)">Send protection</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: API ENDPOINTS
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-api">
+  <h2>API <span>Endpoints</span></h2>
+  <p class="subtitle">Backend intelligence layer — <code>https://api.rabby.io</code> (testnet: <code>https://api.testnet.rabby.io</code>).</p>
+
+  <div class="callout">
+    <strong>API key generation:</strong> Each extension instance generates a UUID as its API key, persisted in storage: <code>this.store.apiKey = uuidv4()</code>. There is no user auth — the key is purely per-installation.
+  </div>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Method</th><th>Endpoint (inferred)</th><th>Used for</th><th>Returns</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>parseTx()</code></td>
+        <td><code>POST /v1/tx/action</code></td>
+        <td>Classify transaction action type</td>
+        <td><code>action.type</code>, <code>log_id</code></td>
+      </tr>
+      <tr>
+        <td><code>preExecTx()</code></td>
+        <td><code>POST /v1/tx/pre_exec</code></td>
+        <td>Simulate tx execution before signing</td>
+        <td><code>balance_change</code>, <code>gas</code>, <code>pre_exec.success</code></td>
+      </tr>
+      <tr>
+        <td><code>addrDesc()</code></td>
+        <td><code>GET /v1/address/desc</code></td>
+        <td>Address reputation metadata</td>
+        <td><code>is_scam</code>, <code>is_danger</code>, <code>cex</code>, <code>contract</code></td>
+      </tr>
+      <tr>
+        <td><code>hasTransferAllChain()</code></td>
+        <td><code>GET /v1/user/has_transfer</code></td>
+        <td>Check if user has sent to address before</td>
+        <td><code>has_transfer: boolean</code></td>
+      </tr>
+      <tr>
+        <td><code>checkTokenDepositForbidden()</code></td>
+        <td><code>POST /v1/cex/check_forbidden</code></td>
+        <td>CEX deposit restriction check</td>
+        <td><code>msg: string</code> (if blocked)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="chart-wrap">
+    <h3>API Call Frequency by Feature</h3>
+    <canvas id="apiChart" height="220"></canvas>
+  </div>
+
+  <div class="callout amber">
+    <strong>Closed-source backend:</strong> The actual scoring logic behind <code>is_scam</code>, <code>is_danger</code>, and contract trust values lives entirely in the backend. The extension is a consumer of these scores — it does not compute them locally.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: STATE MANAGEMENT
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-redux">
+  <h2>Redux <span>State Management</span></h2>
+  <p class="subtitle">Security engine state in Redux (Rematch) — <code>src/ui/models/securityEngine.ts</code>.</p>
+
+  <pre>// State shape
+interface State {
+  userData: UserData;
+  rules: RuleConfig[];
+  currentTx: {
+    processedRules: string[];   // rule IDs the user has acknowledged
+    ruleDrawer: {
+      selectRule: {
+        ruleConfig: RuleConfig;
+        value: any;
+        level: Level;
+        ignored: boolean;
+      } | null;
+      visible: boolean;
+    };
+  };
+}</pre>
+
+  <h3>Redux Actions</h3>
+  <table class="compare-table">
+    <thead><tr><th>Action</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>processRule(id)</code></td><td>Mark one rule as acknowledged by user</td></tr>
+      <tr><td><code>processAllRules(ids)</code></td><td>Acknowledge all rules — used by "Confirm anyway" button</td></tr>
+      <tr><td><code>unProcessRule(id)</code></td><td>Revert acknowledgement for one rule</td></tr>
+      <tr><td><code>openRuleDrawer(rule)</code></td><td>Show the detail drawer for an individual rule</td></tr>
+    </tbody>
+  </table>
+
+  <h3>UI Components that Render Risk</h3>
+  <div class="card">
+    <pre>// SecurityListItem.tsx — renders risk level per rule
+const SecurityListItem = ({ id, engineResult, dangerText, warningText, safeText, forbiddenText }) => (
+  &lt;&gt;
+    {engineResult.level === Level.DANGER    &amp;&amp; dangerText}
+    {engineResult.level === Level.WARNING   &amp;&amp; warningText}
+    {engineResult.level === Level.SAFE      &amp;&amp; safeText}
+    {engineResult.level === Level.FORBIDDEN &amp;&amp; forbiddenText}
+    &lt;SecurityListItemTag id={id} engineResult={engineResult} /&gt;
+  &lt;/&gt;
+);</pre>
+
+    <div class="callout" style="margin-top:12px">
+      <strong>Rule IDs used in approval screens:</strong><br>
+      <code>page.signTx.tokenApprove.flagByRabby</code> — contract flagged by Rabby<br>
+      <code>page.signTx.tokenApprove.eoaAddress</code> — approving to an EOA<br>
+      <code>page.signTx.tokenApprove.deployTimeLessThan</code> — recently deployed contract<br>
+      <code>page.signTx.tokenApprove.contractTrustValueTip</code> — low trust value
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: FULL STACK VIEW
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-fullstack">
+  <h2>Full <span>Stack View</span></h2>
+  <p class="subtitle">All 5 fraud detection layers from backend intelligence to UI rendering.</p>
+
+  <div class="layer-card">
+    <div class="layer-num">1</div>
+    <div class="layer-content">
+      <h4>Backend Intelligence — <code>api.rabby.io</code> + DeBank</h4>
+      <p>Address reputation (<code>is_scam</code>, <code>is_danger</code>), transaction action classification (<code>parseTx</code>), pre-execution simulation with balance change (<code>preExecTx</code>), transfer history tracking. <strong>Closed-source scoring logic.</strong></p>
+    </div>
+  </div>
+
+  <div class="layer-card">
+    <div class="layer-num">2</div>
+    <div class="layer-content">
+      <h4>Rule Engine — <code>rabby-security-engine v2.0.12</code></h4>
+      <p><code>defaultRules</code>: built-in ruleset (closed-source in npm). User-configurable: each rule can be enabled/disabled. Levels: SAFE → WARNING → DANGER → FORBIDDEN. Context-aware: each action type has its own context shape.</p>
+    </div>
+  </div>
+
+  <div class="layer-card">
+    <div class="layer-num">3</div>
+    <div class="layer-content">
+      <h4>Action Analysis — <code>rabby-action v0.1.14</code></h4>
+      <p><code>parseAction</code>: decode raw tx data → structured action object. <code>fetchActionRequiredData</code>: enrichment (contract age, trust value, whitelist status…). <code>formatSecurityEngineContext</code>: build final typed context for rule engine input.</p>
+    </div>
+  </div>
+
+  <div class="layer-card">
+    <div class="layer-num">4</div>
+    <div class="layer-content">
+      <h4>Local User Data</h4>
+      <p>Personal blacklist/whitelist (origin, contract, address). Address whitelist for send protection. Processed rules state (per-tx session, reset on new tx). All stored locally — never synced to server.</p>
+    </div>
+  </div>
+
+  <div class="layer-card">
+    <div class="layer-num">5</div>
+    <div class="layer-content">
+      <h4>UI Layer</h4>
+      <p><code>SecurityListItem</code>: renders risk per rule in approval screens. <code>AddressRiskAlert</code>: warning banner when entering recipient. Rule drawer: user can inspect and individually ignore rules. "Confirm anyway": overrides all non-FORBIDDEN warnings.</p>
+    </div>
+  </div>
+
+  <h3>Layer Complexity Breakdown</h3>
+  <table class="compare-table" style="margin-top:8px">
+    <thead>
+      <tr><th>Layer</th><th>Component</th><th>Responsibility Weight</th><th>Open Source?</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:var(--green)">Layer 1</strong></td>
+        <td><code>api.rabby.io</code> + DeBank</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="background:var(--bg3);border-radius:4px;height:8px;width:180px;overflow:hidden">
+              <div style="width:35%;height:100%;background:var(--green);border-radius:4px"></div>
+            </div>
+            <span style="font-size:12px;color:var(--green)">35%</span>
+          </div>
+        </td>
+        <td><span class="badge badge-red">Closed</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--accent)">Layer 2</strong></td>
+        <td><code>rabby-security-engine</code></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="background:var(--bg3);border-radius:4px;height:8px;width:180px;overflow:hidden">
+              <div style="width:30%;height:100%;background:var(--accent);border-radius:4px"></div>
+            </div>
+            <span style="font-size:12px;color:var(--accent)">30%</span>
+          </div>
+        </td>
+        <td><span class="badge badge-red">Closed (npm)</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--accent2)">Layer 3</strong></td>
+        <td><code>rabby-action</code></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="background:var(--bg3);border-radius:4px;height:8px;width:180px;overflow:hidden">
+              <div style="width:20%;height:100%;background:var(--accent2);border-radius:4px"></div>
+            </div>
+            <span style="font-size:12px;color:var(--accent2)">20%</span>
+          </div>
+        </td>
+        <td><span class="badge badge-red">Closed (npm)</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--amber)">Layer 4</strong></td>
+        <td>Local User Data</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="background:var(--bg3);border-radius:4px;height:8px;width:180px;overflow:hidden">
+              <div style="width:8%;height:100%;background:var(--amber);border-radius:4px"></div>
+            </div>
+            <span style="font-size:12px;color:var(--amber)">8%</span>
+          </div>
+        </td>
+        <td><span class="badge badge-green">Open</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--red)">Layer 5</strong></td>
+        <td>UI (React components)</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="background:var(--bg3);border-radius:4px;height:8px;width:180px;overflow:hidden">
+              <div style="width:7%;height:100%;background:var(--red);border-radius:4px"></div>
+            </div>
+            <span style="font-size:12px;color:var(--red)">7%</span>
+          </div>
+        </td>
+        <td><span class="badge badge-green">Open</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout green" style="margin-top:16px">
+    <strong>Defense-in-depth design:</strong> No single layer is a single point of failure. A transaction must pass cloud intelligence (Layer 1), static rule evaluation (Layer 2), action enrichment (Layer 3), and local user preferences (Layer 4) before the UI shows a green light.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: CLOSED-SOURCE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-closed">
+  <h2>Closed-Source <span>Parts</span></h2>
+  <p class="subtitle">What is NOT in the open-source repo — and how to go deeper.</p>
+
+  <div class="callout red">
+    <strong>Important:</strong> The most security-critical logic — the actual rule definitions and backend scoring — lives in closed-source npm packages and a private API, not in the public GitHub repo.
+  </div>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Component</th><th>Location</th><th>What's hidden</th><th>How to investigate</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>defaultRules</code></td>
+        <td><code>@rabby-wallet/rabby-security-engine/dist/rules</code></td>
+        <td>Actual rule definitions, trigger conditions, thresholds, rule IDs</td>
+        <td>Decompile the npm package (<code>node_modules/.../dist/rules.js</code>)</td>
+      </tr>
+      <tr>
+        <td><code>rabby-action</code> internals</td>
+        <td><code>@rabby-wallet/rabby-action</code></td>
+        <td>Full logic of <code>parseAction</code>, <code>fetchActionRequiredData</code>, <code>formatSecurityEngineContext</code></td>
+        <td>Check GitHub: search <code>rabby-action</code> under RabbyHub org</td>
+      </tr>
+      <tr>
+        <td>Backend scoring</td>
+        <td><code>https://api.rabby.io</code></td>
+        <td>How <code>is_scam</code>, <code>is_danger</code>, contract trust value are computed</td>
+        <td>Network tab inspection, DeBank public research</td>
+      </tr>
+      <tr>
+        <td>approvelist.json</td>
+        <td>GitHub Actions CI/CD</td>
+        <td>Source of the approved dApp action list; who controls it</td>
+        <td>Watch the <code>update-approvelist.yml</code> workflow runs</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Suggested Next Steps</h3>
+  <div class="card">
+    <p><strong>1. Decompile npm packages:</strong> Unpack <code>node_modules/@rabby-wallet/rabby-security-engine/dist/</code> and <code>node_modules/@rabby-wallet/rabby-action/dist/</code> in the Rabby build directory. The minified JS contains all rule IDs, thresholds, and action parsing logic.</p>
+    <p><strong>2. Check RabbyHub GitHub org:</strong> Some packages that appear closed may have public repos under <a href="https://github.com/RabbyHub" target="_blank" style="color:var(--accent)">github.com/RabbyHub</a> — e.g. <code>rabby-security-engine</code> and <code>rabby-action</code> may be separate repos.</p>
+    <p><strong>3. Intercept API traffic:</strong> Use a proxy (Burp Suite, mitmproxy) to inspect raw requests/responses from <code>api.rabby.io</code> and understand the full response schema of each endpoint.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: REFERENCES
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-references">
+  <h2><span>References</span></h2>
+  <p class="subtitle">Sources and recommended reading for deeper research. Primary source: uploaded codebase analysis file.</p>
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <span class="badge badge-accent">Primary Source</span>
+      <div>
+        <p style="color:var(--text);margin-bottom:4px;font-weight:600">Rabby Wallet — Fraud Detection Deep Dive from Source Code</p>
+        <p style="margin:0;font-size:13px">Direct analysis of the <code>RabbyHub/Rabby</code> repository. Covers <code>securityEngine.ts</code>, <code>SignTx.tsx</code>, <code>useAddressRisk.ts</code>, <code>whitelist.ts</code>, Redux models, and the 3 core npm packages. File: <em>fraud_detection_rabby_git_en.md</em>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <span class="badge badge-green">Open Source</span>
+      <div>
+        <p style="color:var(--text);margin-bottom:4px;font-weight:600">RabbyHub/Rabby — GitHub Repository</p>
+        <p style="margin:0;font-size:13px">RabbyHub. <em>Rabby: The game-changing wallet for Ethereum and all EVM chains</em>. GitHub. <a href="https://github.com/RabbyHub/Rabby" target="_blank" style="color:var(--accent)">https://github.com/RabbyHub/Rabby</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+// ── Theme ──────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? '🌙 Dark' : '☀ Light';
+  setTimeout(renderCharts, 50);
+}
+
+// ── Sidebar ───────────────────────────────────────────────
+let sidebarHidden = false;
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  sidebarHidden = !sidebarHidden;
+  if (sidebarHidden) {
+    sb.classList.add('hidden');
+    main.classList.add('expanded');
+  } else {
+    sb.classList.remove('hidden');
+    main.classList.remove('expanded');
+  }
+}
+
+// ── Page navigation ───────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(a => {
+    if (a.getAttribute('onclick') && a.getAttribute('onclick').includes("'" + id + "'")) {
+      a.classList.add('active');
+    }
+  });
+  window.scrollTo(0, 0);
+  setTimeout(renderCharts, 100);
+  // Close sidebar on mobile
+  if (window.innerWidth <= 700) {
+    document.getElementById('sidebar').classList.remove('visible');
+  }
+}
+
+// ── Tabs ──────────────────────────────────────────────────
+function switchTab(group, panel) {
+  const btns = document.querySelectorAll('[onclick*="switchTab(\'' + group + '\'"]');
+  const panels = document.querySelectorAll('[id^="tab-' + group + '-"]');
+  btns.forEach(b => b.classList.remove('active'));
+  panels.forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('tab-' + group + '-' + panel);
+  if (target) target.classList.add('active');
+  btns.forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + panel + "'")) {
+      b.classList.add('active');
+    }
+  });
+  setTimeout(renderCharts, 50);
+}
+
+// ── Step diagram ──────────────────────────────────────────
+function markSteps(n) {
+  const steps = document.querySelectorAll('#tx-steps .step');
+  steps.forEach((s, i) => {
+    if (i < n) s.classList.add('done');
+    else s.classList.remove('done');
+  });
+}
+
+// ── Charts ────────────────────────────────────────────────
+function getCSSVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function setupCanvas(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  const dpr = window.devicePixelRatio || 1;
+  // Walk up until we find a container with real width
+  let el = canvas.parentElement;
+  let w = 0;
+  while (el && w < 100) { w = el.getBoundingClientRect().width || el.offsetWidth || 0; el = el.parentElement; }
+  w = (w > 40 ? w : document.getElementById('main').offsetWidth || 700) - 40;
+  const h = parseInt(canvas.getAttribute('height')) || 220;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w, h };
+}
+
+function drawBar(ctx, x, y, w, h, color, radius = 4) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function drawLevelChart() {
+  const c = setupCanvas('levelChart');
+  if (!c) return;
+  const { ctx, w, h } = c;
+  const accent = getCSSVar('--accent');
+  const green = getCSSVar('--green');
+  const amber = getCSSVar('--amber');
+  const red = getCSSVar('--red');
+  const textMuted = getCSSVar('--text-muted');
+  const grid = getCSSVar('--chart-grid');
+  const bg2 = getCSSVar('--bg2');
+
+  ctx.fillStyle = bg2;
+  ctx.fillRect(0, 0, w, h);
+
+  const labels = ['SAFE', 'WARNING', 'DANGER', 'FORBIDDEN'];
+  const vals = [60, 25, 12, 3];
+  const colors = [green, amber, red, '#666'];
+  const maxVal = 80;
+  const padL = 70, padR = 20, padT = 20, padB = 30;
+  const barW = (w - padL - padR) / labels.length * 0.55;
+  const gap = (w - padL - padR) / labels.length;
+
+  // Grid
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (1 - i * 20 / maxVal) * (h - padT - padB);
+    ctx.strokeStyle = grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillStyle = textMuted;
+    ctx.font = '11px ' + getCSSVar('--font-sans');
+    ctx.textAlign = 'right';
+    ctx.fillText((i * 20) + '%', padL - 8, y + 4);
+  }
+
+  // Bars
+  vals.forEach((v, i) => {
+    const x = padL + i * gap + (gap - barW) / 2;
+    const barH = (v / maxVal) * (h - padT - padB);
+    const y = h - padB - barH;
+    const grad = ctx.createLinearGradient(0, y, 0, h - padB);
+    grad.addColorStop(0, colors[i]);
+    grad.addColorStop(1, colors[i] + '55');
+    drawBar(ctx, x, y, barW, barH, grad);
+    ctx.fillStyle = textMuted;
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x + barW / 2, h - padB + 16);
+    ctx.fillStyle = colors[i];
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(v + '%', x + barW / 2, y - 6);
+  });
+}
+
+function drawApiChart() {
+  const c = setupCanvas('apiChart');
+  if (!c) return;
+  const { ctx, w, h } = c;
+  const accent = getCSSVar('--accent');
+  const accent2 = getCSSVar('--accent2');
+  const textMuted = getCSSVar('--text-muted');
+  const grid = getCSSVar('--chart-grid');
+  const bg2 = getCSSVar('--bg2');
+
+  ctx.fillStyle = bg2;
+  ctx.fillRect(0, 0, w, h);
+
+  const labels = ['parseTx', 'preExecTx', 'addrDesc', 'hasTransfer', 'checkCex'];
+  const vals = [95, 95, 70, 60, 40];
+  const maxVal = 100;
+  const padL = 100, padR = 20, padT = 20, padB = 30;
+  const barH = 22;
+  const gap = (h - padT - padB) / labels.length;
+
+  for (let i = 0; i <= 5; i++) {
+    const x = padL + (i / 5) * (w - padL - padR);
+    ctx.strokeStyle = grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke();
+    ctx.fillStyle = textMuted;
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText((i * 20) + '%', x, h - padB + 14);
+  }
+
+  vals.forEach((v, i) => {
+    const y = padT + i * gap + (gap - barH) / 2;
+    const barW = (v / maxVal) * (w - padL - padR);
+    const grad = ctx.createLinearGradient(padL, 0, padL + barW, 0);
+    grad.addColorStop(0, accent);
+    grad.addColorStop(1, accent2);
+    drawBar(ctx, padL, y, barW, barH, grad);
+    ctx.fillStyle = textMuted;
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(labels[i], padL - 8, y + barH / 2 + 4);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'left';
+    if (barW > 40) ctx.fillText(v + '%', padL + barW - 34, y + barH / 2 + 4);
+  });
+}
+
+function drawStackChart() {
+  const el = document.getElementById('stackBars');
+  if (!el) return;
+  const layers = [
+    { label: 'Layer 1 — Backend API (api.rabby.io)', val: 35, color: 'var(--green)' },
+    { label: 'Layer 2 — Rule Engine (rabby-security-engine)', val: 30, color: 'var(--accent)' },
+    { label: 'Layer 3 — Action Analysis (rabby-action)', val: 20, color: 'var(--accent2)' },
+    { label: 'Layer 4 — Local User Data', val: 8, color: 'var(--amber)' },
+    { label: 'Layer 5 — UI Layer', val: 7, color: 'var(--red)' },
+  ];
+  el.innerHTML = layers.map(l => `
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="color:var(--text)">${l.label}</span>
+        <span style="color:${l.color};font-weight:700">${l.val}%</span>
+      </div>
+      <div style="background:var(--bg3);border-radius:99px;height:10px;overflow:hidden">
+        <div style="width:${l.val}%;height:100%;border-radius:99px;background:${l.color};transition:width 1s ease"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCharts() {
+  drawLevelChart();
+  drawApiChart();
+  drawStackChart();
+}
+
+window.addEventListener('load', () => setTimeout(renderCharts, 100));
+window.addEventListener('resize', renderCharts);
+</script>
+</body>
+</html>
