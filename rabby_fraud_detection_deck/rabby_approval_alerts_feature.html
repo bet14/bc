@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rabby Wallet — Approval Risk Alerts</title>
+<link rel="stylesheet" href="rabby_sidebar.css">
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+  --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+  --accent: #6c8ef7; --accent2: #a78bfa; --green: #34d399;
+  --amber: #fbbf24; --red: #f87171;
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
+}
+[data-theme="light"] {
+  --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+  --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+  --accent: #4361ee; --accent2: #7c3aed; --green: #059669;
+  --amber: #d97706; --red: #dc2626;
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.65;
+}
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 18px; gap: 14px;
+}
+#topbar h1 { font-size: 16px; font-weight: 700; flex: 1; }
+#topbar h1 span { color: var(--accent); }
+#theme-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+  transition: background var(--transition);
+}
+#theme-btn:hover { background: var(--border); }
+#main {
+  margin-top: 52px;
+  padding: 32px 40px 80px;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+h1 {
+  font-size: 30px;
+  margin: 0 0 6px;
+  letter-spacing: .2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+h2 { font-size: 22px; font-weight: 700; margin: 0 0 6px; color: var(--text); }
+h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; color: var(--accent); }
+.kicker {
+  color: var(--text-muted); font-size: 13px; text-transform: uppercase;
+  letter-spacing: 1.5px; margin-bottom: 6px;
+}
+.subtitle { color: var(--text-muted); font-size: 15px; margin: 0 0 22px; }
+.slide {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 36px;
+  margin-bottom: 28px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+.card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.card-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.card-row .card { flex: 1; min-width: 280px; }
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--bg3);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.callout-title { font-weight: 700; margin-bottom: 4px; font-size: 14px; }
+.note {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg3);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.note b { color: var(--text); }
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin: 2px 4px 2px 0;
+}
+.b-safe { background: rgba(39,193,147,.15); color: var(--safe); border: 1px solid rgba(39,193,147,.4); }
+.b-warn { background: rgba(255,176,32,.15); color: var(--warning); border: 1px solid rgba(255,176,32,.4); }
+.b-danger { background: rgba(236,81,81,.15); color: var(--danger); border: 1px solid rgba(236,81,81,.4); }
+.b-forbidden { background: rgba(175,22,14,.15); color: var(--forbidden); border: 1px solid rgba(175,22,14,.4); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+th {
+  text-align: left; padding: 9px 12px; background: var(--bg2); color: var(--text-muted);
+  font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1px solid var(--border); font-weight: 600;
+}
+td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+td.id { color: var(--accent); font-weight: 700; font-family: var(--font-mono); white-space: nowrap; }
+.module-tag {
+  display: inline-block;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.footer-tag { color: var(--text-muted); font-size: 12px; text-align: center; margin-top: 8px; }
+.pipeline { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
+.pnode {
+  flex: 1; min-width: 160px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 14px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.pnode b { display: block; font-size: 14px; margin-bottom: 5px; color: var(--accent); }
+.pnode span { display: block; color: var(--text-muted); font-size: 11.5px; line-height: 1.55; margin-top: 3px; }
+.arrow { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 20px; min-width: 22px; }
+.pipeline.vertical { flex-direction: column; }
+.pipeline.vertical .arrow { min-height: 14px; }
+ul.feature-list { margin: 8px 0 0; padding-left: 18px; color: var(--text-muted); font-size: 13.5px; line-height: 1.65; }
+ul.feature-list li { margin-bottom: 6px; }
+ul.feature-list b { color: var(--text); }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>Rabby Wallet — <span>Approval Risk Alerts</span></h1>
+  <button id="theme-btn" onclick="toggleTheme()">Light mode</button>
+</div>
+
+<div id="main">
+  <div class="kicker">Fraud Detection Features</div>
+  <h1>Approval Risk Alerts</h1>
+  <p class="subtitle">One of the most dangerous actions in DeFi is granting a token approval. Once a contract is approved to spend a holder's tokens, it can move them at any time afterward. Rabby surfaces four mechanisms — described below with the modules and rules behind each — to keep that decision informed.</p>
+
+  <!-- SECTION 1 -->
+  <div class="slide">
+    <h2>1. Unlimited Approval Detection</h2>
+    <p class="subtitle">Spots when an approval would let a contract spend without limit, and offers a one-click way to set a specific amount instead.</p>
+    <div class="card-row">
+      <div class="card" style="flex-basis:100%;">
+        <h3>How it works</h3>
+        <div class="pipeline">
+          <div class="pnode"><b>Show the amount</b>Display the requested amount next to the wallet balance, as an editable field.<span>TokenAmountItem</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Spot the red flag</b>An amount larger than the balance signals an unlimited request — the balance turns into a one-click fix.<span>handleClickTokenBalance</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Suggest a limit</b>One click rewrites the transaction to request only the real balance instead of an unlimited amount.<span>handleApproveAmountChange · getCustomTxParamsData</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Sign a safer request</b>The wallet signs a bounded permission — fixed before signing, not just flagged after.</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Modules involved</h3>
+        <div class="module-tag">TokenApprove action view</div>
+        <div class="module-tag">TokenAmountItem (editable amount field)</div>
+        <div class="module-tag">handleApproveAmountChange</div>
+        <div class="module-tag">handleClickTokenBalance</div>
+        <div class="module-tag">getCustomTxParamsData (custom permission amount)</div>
+        <div class="note"><b>Note:</b> this safeguard is not driven by a numbered rule in the security engine — it lives in the approval action's own UI and transaction-editing logic, separate from the rule checks described in section 3.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="slide">
+    <h2>2. Multi-Layer Risk Scoring</h2>
+    <p class="subtitle" style="margin-bottom:14px;">Scores every approval — token or NFT — by blending a server-side verdict with how much is at stake and how other holders have reacted to the same spender, then uses that score to highlight the riskiest ones first.</p>
+    <div class="grid3">
+      <div class="card">
+        <h3>Server layer</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;line-height:1.65;">A risk level returned directly by the backend for the spender or contract — converted into a numeric score that anchors the overall evaluation.</p>
+      </div>
+      <div class="card">
+        <h3>Spend layer</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;line-height:1.65;">Derived from the USD value currently exposed to the spender:</p>
+        <ul class="feature-list">
+          <li>Below <b>$10,000</b> → scored as <span class="badge b-danger">danger</span></li>
+          <li>Below <b>$100,000</b> → scored as <span class="badge b-warn">warning</span></li>
+          <li>Above that → scored as <span class="badge b-safe">safe</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>User-behavior layer</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;line-height:1.65;">Derived from how the wider holder base treats the same spender — comparing how many addresses revoked it against how many approved it:</p>
+        <ul class="feature-list">
+          <li>Fewer than <b>10</b> revokes → <span class="badge b-safe">safe</span></li>
+          <li>Revokes above <b>4×</b> approvals → <span class="badge b-danger">danger</span></li>
+          <li>Revokes above <b>2×</b> approvals → <span class="badge b-warn">warning</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:18px;">
+      <div class="callout-title">How the layers combine</div>
+      The spend score and the user-behavior score are taken together, and both their <b>highest value</b> and their <b>sum</b> are kept alongside the server's score. This combined evaluation is what orders the approval list — so a spender with heavy exposure or a poor revoke-to-approve ratio surfaces above one that merely carries a server warning.
+    </div>
+    <div class="module-tag">utils/approval — ComputedRiskAboutValues</div>
+    <div class="module-tag">utils/approval — ComputedRiskEvaluation</div>
+    <div class="module-tag">makeComputedRiskAboutValues</div>
+    <div class="module-tag">getContractRiskEvaluation</div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="slide">
+    <h2>3. Contract Reputation</h2>
+    <p class="subtitle">Shows whether the contract is verified, how long it has existed, and how other holders have treated it — right on the signing screen.</p>
+    <table>
+      <colgroup>
+        <col style="width:12%">
+        <col style="width:30%">
+        <col style="width:18%">
+        <col style="width:40%">
+      </colgroup>
+      <tr><th>Rule</th><th>What it checks</th><th>Severity</th><th>What is shown</th></tr>
+      <tr><td class="id">1022</td><td>Whether the spender is an externally-owned account — a personal wallet — rather than a smart contract</td><td><span class="badge b-danger">danger</span></td><td>An ordinary wallet should not normally hold token-spending permissions; this is flagged as the address-type check</td></tr>
+      <tr><td class="id">1024</td><td>Whether the contract was deployed less than three days ago</td><td><span class="badge b-warn">warning</span></td><td>Newly deployed contracts carry little track record, shown as the deploy-time check</td></tr>
+      <tr><td class="id">1029</td><td>Whether Rabby has independently flagged the spender</td><td><span class="badge b-danger">danger</span></td><td>Surfaced as a direct "flagged by Rabby" indicator</td></tr>
+      <tr><td class="id">1150</td><td>Whether the contract carries zero measurable trust value</td><td><span class="badge b-warn">warning</span></td><td>Shown alongside a trust-value figure of $0</td></tr>
+    </table>
+    <div class="note"><b>Alongside these four checks</b>, the same screen also surfaces the spender's protocol identity (whether it is recognized and verified) and whether the holder's address has interacted with it before — giving a fuller reputation picture than the rules alone.</div>
+    <div class="module-tag">TokenApprove action view — SecurityListItem entries</div>
+    <div class="module-tag">SubTable / ProtocolListItem</div>
+    <div class="module-tag">Values.Interacted (prior-interaction indicator)</div>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="slide">
+    <h2>4. Approval Management Dashboard</h2>
+    <p class="subtitle">Provides a dashboard to view and revoke all existing approvals, reducing the attack surface in one place.</p>
+    <div class="card-row">
+      <div class="card" style="flex-basis:100%;">
+        <h3>How it works</h3>
+        <div class="pipeline">
+          <div class="pnode"><b>Count the risk</b>Tally how many token and NFT approvals on an address look risky.<span>useApprovalDangerCount</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Show a warning badge</b>Surface that count as a badge on the dashboard, so it catches the eye early.</div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>List every approval</b>Open a dashboard listing all approvals across every chain in one place.<span>ManageApprovals view</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Revoke in bulk</b>Select several risky approvals — token, NFT, or Permit2 — and clear them in one action, shrinking the attack surface.<span>RevokeTokenApprove · RevokeNFT(Collection) · Revoke/BatchRevokePermit2</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Modules involved</h3>
+        <div class="module-tag">useApprovalDangerCount (token + NFT danger tally)</div>
+        <div class="module-tag">ManageApprovals view</div>
+        <div class="module-tag">RevokeTokenApprove</div>
+        <div class="module-tag">RevokeNFT / RevokeNFTCollection</div>
+        <div class="module-tag">RevokePermit2 / BatchRevokePermit2</div>
+        <div class="note">The bulk-revoke and cross-chain listing capability is what converts the risk signals from sections 2 and 3 into a concrete remediation step — closing the loop between detection and action.</div>
+      </div>
+    </div>
+    <div class="grid">
+      <img src="https://pbs.twimg.com/media/FgEu0X6XEAgsWOP?format=jpg&name=large" alt="Rabby Approval Management Dashboard illustration 1" style="width:100%;border-radius:var(--radius);border:1px solid var(--border);display:block;"/>
+      <img src="https://pbs.twimg.com/media/FgEuuZKWYAATGDu?format=jpg&name=large" alt="Rabby Approval Management Dashboard illustration 2" style="width:100%;border-radius:var(--radius);border:1px solid var(--border);display:block;"/>
+    </div>
+  </div>
+
+  <div class="footer-tag">Source: Rabby approval action views, approval utilities, and approval-management hooks and components</div>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('theme-btn');
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = 'Dark mode';
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = 'Light mode';
+  }
+}
+</script>
+<script src="rabby_sidebar.js" defer></script>
+</body>
+</html>
