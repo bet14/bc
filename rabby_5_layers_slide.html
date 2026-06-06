@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rabby Wallet — 5 Layers of Fraud Detection</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2640;
+    --accent:#7c9eff; --accent2:#9b7cff;
+    --safe:#3ecf8e; --warning:#f5c542; --danger:#ff8a4c; --forbidden:#ff5c5c;
+    --text:#e8edf7; --muted:#9aa7c2; --border:#2a3454;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(160deg,#0c111c,#141b2d 60%,#0c111c);
+    color:var(--text);
+  }
+  .deck{ max-width:1180px; margin:0 auto; padding:28px 24px 80px; }
+  .slide{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:32px 36px;
+    margin-bottom:28px;
+    box-shadow:0 10px 40px rgba(0,0,0,.35);
+  }
+  .slide h1{
+    font-size:30px; margin:0 0 6px; letter-spacing:.2px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .slide h2{ font-size:22px; margin:0 0 18px; color:var(--text); }
+  .kicker{ color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px;}
+  .subtitle{ color:var(--muted); font-size:15px; margin:0 0 22px; }
+  .pipeline{
+    display:flex; align-items:stretch; gap:10px; flex-wrap:wrap; margin:18px 0 6px;
+  }
+  .pnode{
+    flex:1; min-width:150px;
+    background:var(--panel2); border:1px solid var(--border); border-radius:12px;
+    padding:14px 12px; text-align:center; font-size:13px; color:var(--text);
+  }
+  .pnode b{ display:block; font-size:14px; margin-bottom:4px; color:var(--accent); }
+  .arrow{ display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:20px; min-width:24px;}
+  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .card{
+    background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:16px 18px;
+  }
+  .card h3{ margin:0 0 8px; font-size:15px; color:var(--accent); }
+  .card code{ background:#0f1525; border:1px solid var(--border); padding:1px 6px; border-radius:5px; font-size:12.5px; color:#c9d4ee; }
+  .card ul{ margin:8px 0 0; padding-left:18px; color:var(--muted); font-size:13.5px; line-height:1.55; }
+  .card ul li b{ color:var(--text); font-weight:600; }
+  .badge{ display:inline-block; font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+    padding:3px 9px; border-radius:999px; margin:2px 4px 2px 0; }
+  .b-safe{ background:rgba(62,207,142,.15); color:var(--safe); border:1px solid rgba(62,207,142,.4);}
+  .b-warn{ background:rgba(245,197,66,.15); color:var(--warning); border:1px solid rgba(245,197,66,.4);}
+  .b-danger{ background:rgba(255,138,76,.15); color:var(--danger); border:1px solid rgba(255,138,76,.4);}
+  .b-forbidden{ background:rgba(255,92,92,.15); color:var(--forbidden); border:1px solid rgba(255,92,92,.4);}
+  .layer-diagram{
+    display:flex; flex-direction:column; gap:10px; margin-top:8px;
+  }
+  .layer-row{
+    display:flex; align-items:center; gap:14px;
+  }
+  .layer-tag{
+    flex:0 0 150px; text-align:right; font-weight:700; font-size:14px; color:var(--text);
+  }
+  .layer-bar{
+    flex:1; border-radius:10px; padding:14px 18px; font-size:13.5px; color:#0c111c; font-weight:600;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .layer-bar small{ font-weight:500; opacity:.8; font-size:12px; }
+  .l1{ background:linear-gradient(90deg,#7c9eff,#9bb4ff); }
+  .l2{ background:linear-gradient(90deg,#9b7cff,#b79cff); }
+  .l3{ background:linear-gradient(90deg,#ff8a4c,#ffb27c); }
+  .l4{ background:linear-gradient(90deg,#3ecf8e,#7fe6b8); }
+  .l5{ background:linear-gradient(90deg,#5cc8ff,#9fe0ff); }
+  .down-arrow{ text-align:center; color:var(--muted); font-size:18px; margin-left:164px; }
+  .severity-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .sev-chip{
+    flex:1; min-width:120px; border-radius:10px; padding:12px; text-align:center; font-weight:700; font-size:13px;
+    border:1px solid var(--border);
+  }
+  .sev-safe{ background:rgba(62,207,142,.12); color:var(--safe); }
+  .sev-warning{ background:rgba(245,197,66,.12); color:var(--warning); }
+  .sev-danger{ background:rgba(255,138,76,.12); color:var(--danger); }
+  .sev-forbidden{ background:rgba(255,92,92,.12); color:var(--forbidden); }
+  .sev-error{ background:rgba(154,167,194,.12); color:var(--muted); }
+  .footnote{ margin-top:18px; font-size:12.5px; color:var(--muted); border-top:1px dashed var(--border); padding-top:12px; }
+  .source{ font-size:11.5px; color:#6f7d9c; margin-top:4px;}
+  .rules-wrap{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .rule-chip{ background:#0f1525; border:1px solid var(--border); border-radius:7px; padding:4px 9px; font-size:12px; color:var(--muted);}
+  .flow-end{
+    display:flex; align-items:center; justify-content:center; gap:10px; margin-top:20px; flex-wrap:wrap;
+  }
+  .flow-end .pnode{ flex:0 0 200px; }
+  @media(max-width:760px){
+    .grid{ grid-template-columns:1fr; }
+    .layer-tag{ flex-basis:110px; font-size:12.5px; text-align:left;}
+    .down-arrow{ margin-left:0; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- SLIDE 1: Title + pipeline overview -->
+  <section class="slide">
+    <div class="kicker">Rabby Wallet — Architecture Deep Dive</div>
+    <h1>5 Layers of Fraud Detection</h1>
+    <p class="subtitle">How a single transaction or signature request travels from raw calldata to a risk-scored decision the user can trust — backend intelligence → action analysis → rule engine → local overrides → UI verdict.</p>
+
+    <div class="pipeline">
+      <div class="pnode l1" style="background:rgba(124,158,255,.15); border-color:rgba(124,158,255,.4);"><b>Layer 1</b>Backend Intelligence<br><code>api.rabby.io</code></div>
+      <div class="arrow">→</div>
+      <div class="pnode" style="background:rgba(155,124,255,.15); border-color:rgba(155,124,255,.4);"><b>Layer 2</b>Action Analysis<br><code>rabby-action</code></div>
+      <div class="arrow">→</div>
+      <div class="pnode" style="background:rgba(255,138,76,.15); border-color:rgba(255,138,76,.4);"><b>Layer 3</b>Rule Engine<br><code>rabby-security-engine</code></div>
+      <div class="arrow">→</div>
+      <div class="pnode" style="background:rgba(62,207,142,.15); border-color:rgba(62,207,142,.4);"><b>Layer 4</b>Local User Data<br><span style="color:var(--muted);">device-only storage</span></div>
+      <div class="arrow">→</div>
+      <div class="pnode" style="background:rgba(92,200,255,.15); border-color:rgba(92,200,255,.4);"><b>Layer 5</b>UI Layer<br><span style="color:var(--muted);">Approval screen</span></div>
+    </div>
+    <p class="source">Verified against cloned source: <code>Rabby/package.json</code> (deps <code>@rabby-wallet/rabby-action@0.1.14</code>, <code>@rabby-wallet/rabby-security-engine@2.0.12</code>) and corresponding repo folders.</p>
+  </section>
+
+  <!-- SLIDE 2: Layer 1 -->
+  <section class="slide">
+    <div class="kicker">Layer 1 of 5</div>
+    <h2>Backend Intelligence — <code>api.rabby.io</code></h2>
+    <div class="grid">
+      <div class="card">
+        <h3>What it does</h3>
+        <ul>
+          <li><b>parseTx</b> — decodes raw calldata into a human-readable action description</li>
+          <li><b>preExecTx</b> — simulates the transaction against on-chain state (balance deltas, token approvals, NFT transfers) before signing</li>
+          <li><b>addrDesc</b> — looks up address metadata: contract or EOA? verified? labeled? CEX deposit address? how old?</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Confirmed in source</h3>
+        <ul>
+          <li><code>constant/index.ts</code> → <code>INITIAL_OPENAPI_URL = 'https://api.rabby.io'</code></li>
+          <li><code>background/service/contactBook.ts</code>, <code>ui/hooks/useAddressInfo.ts</code> call <code>openapi.addrDesc(address)</code></li>
+          <li><code>parseTx</code>/<code>preExecTx</code> referenced in <code>wallet.ts</code>, <code>useAddressRisk.ts</code>, <code>SignTx.tsx</code>, <code>sendTransaction.ts</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h3>Output → feeds Layer 2</h3>
+      <p style="margin:0; color:var(--muted); font-size:13.5px;">A structured <code>TxContext</code>-style object: decoded action, simulated state changes, and address risk metadata — the raw material the action-analysis layer will classify.</p>
+      <p class="source" style="margin-top:10px;">Note: the brief names "GoPlus Security API" as a feed; a full-text search of the cloned repos found no reference to GoPlus. Internal scam/phishing flags (<code>isScam</code>, <code>phishing</code>) and DeBank-affiliated backend data are what's actually verifiable — flagged here as an open item rather than asserted as fact.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: Layer 2 -->
+  <section class="slide">
+    <div class="kicker">Layer 2 of 5</div>
+    <h2>Action Analysis — <code>@rabby-wallet/rabby-action</code> (v0.1.14)</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Pipeline functions</h3>
+        <ul>
+          <li><b>parseAction(tx, context)</b> — classifies the request: Swap / Approve / Transfer / Contract Call / Permit / SignTypedData…</li>
+          <li><b>fetchActionRequiredData</b> — pulls the extra on-chain facts each rule needs (token price, contract deploy age, approval history, spender risk exposure)</li>
+          <li><b>formatContext</b> — flattens everything into the <code>ActionContext</code> object Layer 3 consumes</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Handles both transaction types</h3>
+        <p style="color:var(--muted); font-size:13.5px; line-height:1.6; margin:0 0 8px;">The same pipeline classifies <b style="color:var(--text)">on-chain transactions</b> and <b style="color:var(--text)">off-chain signatures</b> (EIP-712 typed data, <code>personal_sign</code>) — confirmed by shared imports across:</p>
+        <div class="rules-wrap">
+          <span class="rule-chip">SignTx.tsx</span>
+          <span class="rule-chip">SignTypedData.tsx</span>
+          <span class="rule-chip">SignText.tsx</span>
+          <span class="rule-chip">SignTestnetTx</span>
+          <span class="rule-chip">sendTransaction.ts</span>
+          <span class="rule-chip">MiniSignV2/SignatureSteps.ts</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: Layer 3 -->
+  <section class="slide">
+    <div class="kicker">Layer 3 of 5</div>
+    <h2>Rule Engine — <code>@rabby-wallet/rabby-security-engine</code> (v2.0.12)</h2>
+    <p class="subtitle" style="margin-bottom:8px;">24 rule modules, one per action type, each evaluating the <code>ContextActionData</code> produced by Layer 2 and returning a severity verdict.</p>
+    <div class="rules-wrap">
+      <span class="rule-chip">connect</span><span class="rule-chip">swap</span><span class="rule-chip">send</span>
+      <span class="rule-chip">tokenApprove</span><span class="rule-chip">sendNFT</span><span class="rule-chip">nftApprove</span>
+      <span class="rule-chip">collectionApprove</span><span class="rule-chip">wrap</span><span class="rule-chip">permit</span>
+      <span class="rule-chip">permit2</span><span class="rule-chip">sellNFT</span><span class="rule-chip">buyNFT</span>
+      <span class="rule-chip">swapTokenOrder</span><span class="rule-chip">crossToken</span><span class="rule-chip">crossSwapToken</span>
+      <span class="rule-chip">verifyAddress</span><span class="rule-chip">createKey</span><span class="rule-chip">batchPermit2</span>
+      <span class="rule-chip">batchSellNFT</span><span class="rule-chip">revokeToken</span><span class="rule-chip">common</span>
+      <span class="rule-chip">assetOrder</span><span class="rule-chip">transferOwner</span><span class="rule-chip">addLiquidity</span>
+    </div>
+
+    <h3 style="margin:22px 0 4px; font-size:14px; color:var(--accent);">Severity scale (enum <code>Level</code>, <code>rules/index.ts</code>)</h3>
+    <div class="severity-row">
+      <div class="sev-chip sev-safe">SAFE</div>
+      <div class="sev-chip sev-warning">WARNING</div>
+      <div class="sev-chip sev-danger">DANGER</div>
+      <div class="sev-chip sev-forbidden">FORBIDDEN</div>
+      <div class="sev-chip sev-error">ERROR</div>
+    </div>
+
+    <div class="grid" style="margin-top:18px;">
+      <div class="card">
+        <h3>Example signal fields it evaluates (<code>ContextActionData</code>)</h3>
+        <ul>
+          <li><b>swap:</b> <code>receiveTokenIsScam</code>, <code>receiveTokenIsFake</code>, <code>slippageTolerance</code>, <code>usdValuePercentage</code></li>
+          <li><b>send:</b> <code>receiverIsSpoofing</code>, <code>onTransferWhitelist</code>, <code>hasReceiverMnemonicInWallet</code></li>
+          <li><b>permit / permit2 / tokenApprove:</b> <code>spender</code>, <code>isEOA</code>, <code>riskExposure</code>, <code>deployDays</code>, <code>isDanger</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What this layer answers</h3>
+        <p style="color:var(--muted); font-size:13.5px; line-height:1.6; margin:0;">Turns "what is this transaction" (Layer 2's output) into "<b style="color:var(--text)">how dangerous is it, and exactly why</b>" — a list of triggered rules, each carrying an ID, a severity, and the data points that fired it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: Layer 4 -->
+  <section class="slide">
+    <div class="kicker">Layer 4 of 5</div>
+    <h2>Local User Data — on-device overrides</h2>
+    <p class="subtitle" style="margin-bottom:8px;">Confirmed interface <code>UserData</code> in <code>rabby-security-engine/src/rules/index.ts</code>, consumed by <code>Rabby/src/background/service/securityEngine.ts</code>.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Stored lists (extension storage — never leaves the device)</h3>
+        <ul>
+          <li><span class="badge b-forbidden">blacklist</span><b>originBlacklist</b> — domains the user manually blocked</li>
+          <li><span class="badge b-forbidden">blacklist</span><b>contractBlacklist</b> — contracts flagged as malicious</li>
+          <li><span class="badge b-forbidden">blacklist</span><b>addressBlacklist</b> — addresses blocked (e.g. after a poisoning attempt)</li>
+          <li><span class="badge b-safe">whitelist</span><b>originWhitelist / contractWhitelist / addressWhitelist</b> — trusted entities that skip certain warnings</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Why this layer matters</h3>
+        <p style="color:var(--muted); font-size:13.5px; line-height:1.6; margin:0;">User-level overrides can <b style="color:var(--text)">downgrade a verdict</b> — e.g. DANGER → accepted — after explicit confirmation. This keeps the system from crying wolf on entities the user has personally vetted, while still requiring a deliberate action to override a server-side warning.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: Layer 5 -->
+  <section class="slide">
+    <div class="kicker">Layer 5 of 5</div>
+    <h2>UI Layer — turning verdicts into a decision screen</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Confirmed components (<code>ui/views/Approval/components/</code>)</h3>
+        <ul>
+          <li><b>SecurityListItem</b> — renders each rule result as a colored badge row</li>
+          <li><b>SecurityListItemTag</b> — the severity tag mapping safe/warning/danger/forbidden → color</li>
+          <li><b>RuleDrawer</b> (in <code>SecurityEngine/</code>) — expandable panel: rule ID, plain-language "why this is risky", one-click whitelist</li>
+          <li><b>ProcessedRules</b> — aggregated per-screen summary by severity, used across nearly every action component (Swap, CrossToken, AddLiquidity, AssetOrder…)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Gating logic on the Sign button</h3>
+        <ul>
+          <li><span class="badge b-forbidden">FORBIDDEN</span> present → Sign button <b>disabled</b></li>
+          <li><span class="badge b-danger">DANGER</span> present → warning modal must be acknowledged before signing</li>
+          <li><span class="badge b-warn">WARNING</span> / <span class="badge b-safe">SAFE</span> → shown as informational badges, no hard gate</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7: End-to-end recap -->
+  <section class="slide">
+    <div class="kicker">Putting it together</div>
+    <h2>End-to-end flow</h2>
+    <div class="layer-diagram">
+      <div class="layer-row">
+        <div class="layer-tag">Layer 1</div>
+        <div class="layer-bar l1">Backend Intelligence — decodes calldata, simulates execution, looks up address metadata <small>parseTx · preExecTx · addrDesc → api.rabby.io</small></div>
+      </div>
+      <div class="down-arrow">↓</div>
+      <div class="layer-row">
+        <div class="layer-tag">Layer 2</div>
+        <div class="layer-bar l2">Action Analysis — classifies the request and normalizes context <small>parseAction · fetchActionRequiredData · formatContext</small></div>
+      </div>
+      <div class="down-arrow">↓</div>
+      <div class="layer-row">
+        <div class="layer-tag">Layer 3</div>
+        <div class="layer-bar l3">Rule Engine — runs 24 action-specific rule modules, assigns severity <small>safe → warning → danger → forbidden</small></div>
+      </div>
+      <div class="down-arrow">↓</div>
+      <div class="layer-row">
+        <div class="layer-tag">Layer 4</div>
+        <div class="layer-bar l4">Local User Data — blacklist/whitelist can override the verdict on-device <small>originBlacklist · contractBlacklist · addressBlacklist · whitelists</small></div>
+      </div>
+      <div class="down-arrow">↓</div>
+      <div class="layer-row">
+        <div class="layer-tag">Layer 5</div>
+        <div class="layer-bar l5">UI Layer — renders badges, drawer detail, and gates the Sign button <small>SecurityListItem · RuleDrawer · ProcessedRules</small></div>
+      </div>
+    </div>
+    <div class="flow-end">
+      <div class="pnode" style="flex:0 0 220px;">User sees a risk-scored, explainable decision — and either signs, confirms past a warning, or cancels</div>
+    </div>
+    <p class="footnote">All component, function, and type names on this slide were cross-checked against the cloned <code>Rabby</code> and <code>rabby-security-engine</code> source trees (commit snapshot, June 2026). One open item: the brief's reference to "GoPlus Security API" could not be located in source — see the companion research file for details.</p>
+  </section>
+
+</div>
+</body>
+</html>

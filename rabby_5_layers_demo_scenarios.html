@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rabby 5-Layer Detection — Walkthrough Demo</title>
+<style>
+  :root{
+    --bg:#0c111c; --panel:#161d2e; --panel2:#1d2640;
+    --accent:#7c9eff; --accent2:#9b7cff;
+    --safe:#3ecf8e; --warning:#f5c542; --danger:#ff8a4c; --forbidden:#ff5c5c;
+    --text:#e8edf7; --muted:#9aa7c2; --border:#2a3454;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(160deg,#0c111c,#141b2d 60%,#0c111c);
+    color:var(--text); min-height:100vh;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 24px 90px; }
+  header{ margin-bottom:22px; }
+  header .kicker{ color:var(--muted); font-size:12.5px; text-transform:uppercase; letter-spacing:1.5px; }
+  header h1{
+    font-size:28px; margin:6px 0 8px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  header p{ color:var(--muted); font-size:14.5px; max-width:760px; line-height:1.6; margin:0; }
+
+  .scenario-picker{ display:flex; gap:12px; margin:22px 0; flex-wrap:wrap; }
+  .sc-btn{
+    flex:1; min-width:230px; text-align:left; cursor:pointer;
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; color:var(--text); transition:.15s ease;
+  }
+  .sc-btn:hover{ border-color:var(--accent); transform:translateY(-1px); }
+  .sc-btn.active{ border-color:var(--accent); background:var(--panel2); box-shadow:0 0 0 1px var(--accent) inset; }
+  .sc-btn .tag{ font-size:11px; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+  .sc-btn .name{ font-size:15px; font-weight:700; margin:4px 0 4px; }
+  .sc-btn .desc{ font-size:12.5px; color:var(--muted); line-height:1.5;}
+  .tag.safe{ color:var(--safe); } .tag.warning{ color:var(--warning); }
+  .tag.danger{ color:var(--danger); } .tag.forbidden{ color:var(--forbidden); }
+
+  .stage{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:26px 28px; margin-bottom:18px; box-shadow:0 10px 36px rgba(0,0,0,.3);
+    opacity:0; transform:translateY(14px); transition:opacity .45s ease, transform .45s ease;
+  }
+  .stage.show{ opacity:1; transform:translateY(0); }
+  .stage .num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; border-radius:50%; font-weight:800; font-size:14px;
+    margin-right:10px; color:#0c111c;
+  }
+  .stage h2{ display:flex; align-items:center; font-size:18px; margin:0 0 4px; }
+  .stage .layer-sub{ color:var(--muted); font-size:12.5px; margin:0 0 16px 40px; }
+  .num-l1{ background:linear-gradient(90deg,#7c9eff,#9bb4ff); }
+  .num-l2{ background:linear-gradient(90deg,#9b7cff,#b79cff); }
+  .num-l3{ background:linear-gradient(90deg,#ff8a4c,#ffb27c); }
+  .num-l4{ background:linear-gradient(90deg,#3ecf8e,#7fe6b8); }
+  .num-l5{ background:linear-gradient(90deg,#5cc8ff,#9fe0ff); }
+
+  .kv{ display:grid; grid-template-columns:200px 1fr; gap:6px 14px; font-size:13.5px; margin:4px 0; }
+  .kv .k{ color:var(--muted); }
+  .kv .v{ color:var(--text); font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:12.8px; }
+  .kv .v.flag-true{ color:var(--forbidden); font-weight:700; }
+  .kv .v.flag-false{ color:var(--safe); }
+
+  .panel-box{ background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-top:10px;}
+  .panel-box h4{ margin:0 0 8px; font-size:12.5px; text-transform:uppercase; letter-spacing:1px; color:var(--accent); }
+
+  .rule-hit{
+    display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border);
+    font-size:13px;
+  }
+  .rule-hit:last-child{ border-bottom:none; }
+  .rule-hit .sev-pill{
+    flex:0 0 auto; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px;
+    padding:3px 8px; border-radius:999px; margin-top:1px;
+  }
+  .sev-safe{ background:rgba(62,207,142,.15); color:var(--safe); border:1px solid rgba(62,207,142,.4);}
+  .sev-warning{ background:rgba(245,197,66,.15); color:var(--warning); border:1px solid rgba(245,197,66,.4);}
+  .sev-danger{ background:rgba(255,138,76,.15); color:var(--danger); border:1px solid rgba(255,138,76,.4);}
+  .sev-forbidden{ background:rgba(255,92,92,.15); color:var(--forbidden); border:1px solid rgba(255,92,92,.4);}
+  .rule-hit .rh-body b{ display:block; color:var(--text); font-size:13px; }
+  .rule-hit .rh-body span{ color:var(--muted); font-size:12px; }
+
+  .override-box{
+    border:1px dashed var(--border); border-radius:10px; padding:12px 16px; margin-top:12px;
+    font-size:13px; color:var(--muted);
+  }
+  .override-box.applied{ border-color:var(--safe); color:var(--text); background:rgba(62,207,142,.06); }
+  .override-box.applied b{ color:var(--safe); }
+  .override-box.none{ border-color:var(--border); }
+
+  .verdict-banner{
+    border-radius:12px; padding:18px 20px; display:flex; align-items:center; gap:16px; margin-top:6px;
+    font-size:15px; font-weight:700;
+  }
+  .verdict-banner .icon{ font-size:26px; }
+  .vb-safe{ background:rgba(62,207,142,.12); color:var(--safe); border:1px solid rgba(62,207,142,.4);}
+  .vb-warning{ background:rgba(245,197,66,.12); color:var(--warning); border:1px solid rgba(245,197,66,.4);}
+  .vb-danger{ background:rgba(255,138,76,.12); color:var(--danger); border:1px solid rgba(255,138,76,.4);}
+  .vb-forbidden{ background:rgba(255,92,92,.12); color:var(--forbidden); border:1px solid rgba(255,92,92,.4);}
+  .verdict-banner .sub{ font-weight:500; font-size:12.5px; color:var(--muted); margin-top:3px; }
+
+  .controls{ display:flex; gap:10px; margin-top:8px; }
+  .controls button{
+    background:var(--accent); color:#0c111c; border:none; border-radius:8px; font-weight:700;
+    padding:10px 18px; font-size:13.5px; cursor:pointer;
+  }
+  .controls button.secondary{ background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .controls button:disabled{ opacity:.4; cursor:default; }
+
+  .analyst-note{
+    background:rgba(124,158,255,.07); border-left:3px solid var(--accent); border-radius:6px;
+    padding:10px 14px; font-size:12.8px; color:var(--muted); margin-top:12px; line-height:1.55;
+  }
+  .analyst-note b{ color:var(--accent); }
+  .progress{ display:flex; gap:6px; margin:18px 0 4px; }
+  .progress .seg{ flex:1; height:5px; border-radius:3px; background:var(--border); }
+  .progress .seg.done{ background:var(--accent); }
+  footer{ color:var(--muted); font-size:12px; text-align:center; margin-top:26px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Rabby Wallet · Risk Analyst Onboarding</div>
+    <h1>5-Layer Detection — Step Through Real Scenarios</h1>
+    <p>This walkthrough is for someone new to Rabby's risk pipeline. Pick a scenario below, then click <b>Next layer</b> to watch the same request travel through Layers 1→5 — exactly the order the extension itself evaluates it — and see why the final verdict comes out the way it does.</p>
+  </header>
+
+  <div class="scenario-picker" id="picker"></div>
+
+  <div class="progress" id="progress"></div>
+
+  <div id="stages"></div>
+
+  <div class="controls">
+    <button id="nextBtn">Start walkthrough →</button>
+    <button id="resetBtn" class="secondary">Reset</button>
+  </div>
+
+  <footer>Layer names, function names, rule modules, and severity levels mirror the verified architecture in <code>rabby_5_layer_architecture_research.md</code>. Numeric values below (risk exposure %, deploy days, etc.) are illustrative training data, not live API responses.</footer>
+</div>
+
+<script>
+const LAYER_META = [
+  {key:'l1', num:'1', cls:'num-l1', title:'Backend Intelligence', sub:'api.rabby.io — parseTx · preExecTx · addrDesc'},
+  {key:'l2', num:'2', cls:'num-l2', title:'Action Analysis', sub:'@rabby-wallet/rabby-action — parseAction · fetchActionRequiredData · formatContext'},
+  {key:'l3', num:'3', cls:'num-l3', title:'Rule Engine', sub:'@rabby-wallet/rabby-security-engine — runs the matching rule module, assigns severities'},
+  {key:'l4', num:'4', cls:'num-l4', title:'Local User Data', sub:'On-device blacklist / whitelist — can override the engine verdict'},
+  {key:'l5', num:'5', cls:'num-l5', title:'UI Layer', sub:'Approval screen — SecurityListItem · RuleDrawer · ProcessedRules · Sign-button gate'},
+];
+
+const SCENARIOS = [
+  {
+    id:'phishing-approve',
+    tag:'forbidden', tagLabel:'Forbidden',
+    name:'Malicious "Approve" from a phishing dApp',
+    desc:'User clicks a link in a Discord DM and is asked to approve USDT spending to an unknown contract.',
+    l1:{
+      heading:'Decoded request + address lookup',
+      kv:[
+        ['Action type (parseTx)','approve(spender, amount)'],
+        ['Token','USDT — 50,000 USDT (≈ entire balance)'],
+        ['Spender address','0xA11ce...DEAD — addrDesc: unverified contract'],
+        ['Contract age (addrDesc)','deployed 6 hours ago', true],
+        ['preExecTx simulation','Balance change: −50,000 USDT projected on approval+drain pattern', true],
+        ['Origin (dApp URL)','rabby-airdrop-claim.xyz — not in any known dApp registry', true],
+      ],
+      note:'Layer 1 already has three red flags: a brand-new contract, an approval sized at the user\'s full balance, and an unrecognized origin. This raw context now moves to Layer 2 for classification.'
+    },
+    l2:{
+      heading:'Classified action + enriched context',
+      kv:[
+        ['parseAction result','tokenApprove'],
+        ['fetchActionRequiredData','spender.deployDays = 0.25, spender.isEOA = false, riskExposure = 98%', true],
+        ['formatContext output','ContextActionData.tokenApprove = { spender, isEOA:false, riskExposure:0.98, deployDays:0.25, isDanger:true }', true],
+        ['Signature type','on-chain transaction (not EIP-712)'],
+      ],
+      note:'Layer 2 doesn\'t judge — it just produces a clean, typed object. Notice it already copied forward `isDanger:true` and a `riskExposure` of 98%, computed from how much of the user\'s holdings this spender could drain.'
+    },
+    l3:{
+      heading:'tokenApprove rule module evaluates the context',
+      hits:[
+        {sev:'forbidden', title:'Approve to a contract deployed in the last 24 hours', sub:'Rule: spender.deployDays < 1 → highest-confidence indicator of a disposable scam contract'},
+        {sev:'danger', title:'Approval amount ≈ 100% of token balance', sub:'Rule: usdValuePercentage > 90% → classic "drain" sizing, no legitimate dApp needs this'},
+        {sev:'danger', title:'Spender risk exposure 98%', sub:'Rule: riskExposure > 80% → derived from prior victim reports against this address'},
+        {sev:'warning', title:'Origin not in known dApp directory', sub:'Rule: origin.communityCount == 0 → no community trust signal at all'},
+      ],
+      verdict:'forbidden',
+      note:'The engine takes the *worst* severity across all triggered rules — one FORBIDDEN hit is enough to forbid signing outright, regardless of how many lower-severity rules also fired.'
+    },
+    l4:{
+      applied:false,
+      text:'Spender address 0xA11ce...DEAD is not on the user\'s personal whitelist (and isn\'t on their blacklist yet either — this is their first encounter with it). No local override applies; the engine\'s FORBIDDEN verdict passes through untouched.',
+      note:'This is the layer where an analyst would expect to see false positives get corrected — e.g. a contract the user has used safely for months. Here, there\'s no history to correct anything.'
+    },
+    l5:{
+      verdict:'forbidden',
+      bannerText:'Sign button disabled — user cannot proceed',
+      bannerSub:'SecurityListItem shows a red "Forbidden" badge; RuleDrawer explains each rule in plain language; ProcessedRules summary reads "1 Forbidden, 2 Danger, 1 Warning".',
+      note:'For a brand-new, high-drain-risk contract, Rabby doesn\'t just warn — it removes the ability to proceed. The only way around a FORBIDDEN verdict is for the user to go to Layer 4 and explicitly whitelist the contract, which requires deliberate, multi-step confirmation.'
+    }
+  },
+  {
+    id:'address-poisoning',
+    tag:'danger', tagLabel:'Danger',
+    name:'Address-poisoning lookalike transfer',
+    desc:'User goes to send USDC to a previously-used address, but a poisoned address with matching first/last characters appears in their history.',
+    l1:{
+      heading:'Decoded request + address lookup',
+      kv:[
+        ['Action type (parseTx)','transfer(to, amount)'],
+        ['Recipient','0x9F2a...8B3c'],
+        ['addrDesc on recipient','EOA, first seen 2 days ago, never received funds before', true],
+        ['preExecTx simulation','Balance change: −1,200 USDC, recipient balance currently 0'],
+        ['Address-similarity check','98% character match with an address the user sent to 3 weeks ago', true],
+      ],
+      note:'The interesting signal here isn\'t the destination in isolation — it\'s the *similarity* to an address already in the user\'s send history. That comparison can only happen because Layer 1 has access to the user\'s on-chain history via the backend.'
+    },
+    l2:{
+      heading:'Classified action + enriched context',
+      kv:[
+        ['parseAction result','send'],
+        ['fetchActionRequiredData','hasTransfer:true, isTokenContract:false, usedChainList:["eth"]'],
+        ['formatContext output','ContextActionData.send = { to, receiverIsSpoofing:true, onTransferWhitelist:false, hasReceiverMnemonicInWallet:false }', true],
+      ],
+      note:'`receiverIsSpoofing` is the single most important field this layer derives for this scenario — it\'s a boolean verdict on whether the destination looks engineered to fool the human eye.'
+    },
+    l3:{
+      heading:'send rule module evaluates the context',
+      hits:[
+        {sev:'danger', title:'Recipient address is a likely spoof of a known contact', sub:'Rule: receiverIsSpoofing == true → flags lookalike-address poisoning attempts'},
+        {sev:'warning', title:'Recipient has no prior incoming transfers', sub:'Rule: addrDesc shows zero transaction history → fresh, unestablished address'},
+        {sev:'safe', title:'Token contract verified and not flagged as scam', sub:'Rule: token.isScam == false, token.isFake == false'},
+      ],
+      verdict:'danger',
+      note:'Notice the mix: one DANGER, one WARNING, one SAFE. The engine still reports all three to the UI — the analyst should know that "worst severity wins for gating" doesn\'t mean lower-severity hits are discarded; they still appear in the drawer for context.'
+    },
+    l4:{
+      applied:false,
+      text:'The real, intended recipient (the address used 3 weeks ago) *is* on the user\'s onTransferWhitelist — but this poisoned look-alike is a different address entirely, so it does not match any whitelist entry. No override applies.',
+      note:'This is exactly the trap address poisoning exploits: whitelists work on exact address match, and the attacker is counting on the user not noticing the destination has changed.'
+    },
+    l5:{
+      verdict:'danger',
+      bannerText:'Warning modal shown — user must actively confirm to proceed',
+      bannerSub:'SecurityListItem shows an orange "Danger" badge with the spoofing rule pinned to the top; the Sign button remains enabled but a confirmation modal interrupts the flow.',
+      note:'DANGER (unlike FORBIDDEN) is a speed bump, not a wall — Rabby is designed to stop an inattentive click but not block a user who, after reading the warning, genuinely intends to proceed (e.g. a security researcher testing the address on purpose).'
+    }
+  },
+  {
+    id:'legit-swap-known-dapp',
+    tag:'safe', tagLabel:'Safe (with one routine warning)',
+    name:'Routine swap on a well-known DEX',
+    desc:'User swaps ETH → USDC on Uniswap, a dApp they have used dozens of times before.',
+    l1:{
+      heading:'Decoded request + address lookup',
+      kv:[
+        ['Action type (parseTx)','swap via Uniswap Universal Router'],
+        ['Contract','0x3fC9...88Ad — addrDesc: verified, labeled "Uniswap: Universal Router"', false],
+        ['Contract age (addrDesc)','deployed 2.1 years ago, 40M+ historical interactions', false],
+        ['preExecTx simulation','Balance change: −1.5 ETH / +4,820 USDC at quoted rate'],
+        ['Origin (dApp URL)','app.uniswap.org — listed in known dApp registry, communityCount: very high', false],
+      ],
+      note:'Compare this to scenario 1: every single Layer-1 signal here points the opposite direction — old, verified, heavily used contract; recognized origin; balance change matches the quote exactly.'
+    },
+    l2:{
+      heading:'Classified action + enriched context',
+      kv:[
+        ['parseAction result','swap'],
+        ['fetchActionRequiredData','tokenPrice lookups confirm quote is within market range'],
+        ['formatContext output','ContextActionData.swap = { receiveTokenIsScam:false, receiveTokenIsFake:false, slippageTolerance:0.5%, usdValuePercentage:14%, receiverInWallet:true }'],
+      ],
+      note:'`usdValuePercentage:14%` matters — it tells the engine this trade is a small fraction of the user\'s total holdings, the opposite sizing pattern from a drain-style approval.'
+    },
+    l3:{
+      heading:'swap rule module evaluates the context',
+      hits:[
+        {sev:'warning', title:'Slippage tolerance set to 0.5%', sub:'Rule: informational reminder shown on every swap above a default threshold — not a risk signal by itself, just a confirmation nudge'},
+        {sev:'safe', title:'Receive token verified, not scam or fake', sub:'Rule: receiveTokenIsScam == false AND receiveTokenIsFake == false'},
+        {sev:'safe', title:'Swap contract long-established and verified', sub:'Rule: contract.deployDays > 365 AND addrDesc.verified == true'},
+      ],
+      verdict:'warning',
+      note:'This is a useful case to show a new analyst: even a perfectly normal transaction usually surfaces *something* — here a routine slippage reminder — because Rabby treats "inform" and "block" as different jobs. A WARNING here is not a sign anything is wrong.'
+    },
+    l4:{
+      applied:true,
+      text:'The Uniswap Universal Router contract is on this user\'s personal contractWhitelist (added after their first successful swap months ago). This doesn\'t change the verdict here — it was already trending SAFE — but it does suppress a lower-priority "first interaction with this contract" notice that would otherwise appear for brand-new counterparties.',
+      note:'This is the clearest example of Layer 4 doing its job quietly: most of the time, its effect is to *reduce noise* for entities the user has already vetted, not to override a dangerous verdict.'
+    },
+    l5:{
+      verdict:'warning',
+      bannerText:'Sign button enabled — informational badge only',
+      bannerSub:'SecurityListItem shows a single yellow "Warning" badge for the slippage reminder; ProcessedRules summary reads "2 Safe, 1 Warning, 0 Danger, 0 Forbidden". User signs normally.',
+      note:'For a new analyst, the takeaway is: a clean ProcessedRules summary dominated by SAFE entries — even with one routine WARNING — is what "the system is working as intended, nothing to escalate" looks like.'
+    }
+  }
+];
+
+let current = null;
+let stageIndex = -1; // -1 = not started
+
+const picker = document.getElementById('picker');
+const stagesEl = document.getElementById('stages');
+const progressEl = document.getElementById('progress');
+const nextBtn = document.getElementById('nextBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+function renderPicker(){
+  picker.innerHTML = '';
+  SCENARIOS.forEach(sc=>{
+    const btn = document.createElement('div');
+    btn.className = 'sc-btn' + (current && current.id===sc.id ? ' active':'');
+    btn.innerHTML = `<div class="tag ${sc.tag}">${sc.tagLabel} outcome</div>
+      <div class="name">${sc.name}</div>
+      <div class="desc">${sc.desc}</div>`;
+    btn.onclick = ()=> selectScenario(sc.id);
+    picker.appendChild(btn);
+  });
+}
+
+function selectScenario(id){
+  current = SCENARIOS.find(s=>s.id===id);
+  stageIndex = -1;
+  stagesEl.innerHTML = '';
+  renderPicker();
+  renderProgress();
+  nextBtn.textContent = 'Start walkthrough →';
+  nextBtn.disabled = false;
+}
+
+function renderProgress(){
+  progressEl.innerHTML = '';
+  for(let i=0;i<5;i++){
+    const seg = document.createElement('div');
+    seg.className = 'seg' + (i<=stageIndex ? ' done':'');
+    progressEl.appendChild(seg);
+  }
+}
+
+function sevPill(sev){ return `<span class="sev-pill sev-${sev}">${sev}</span>`; }
+
+function buildKVRows(rows){
+  return rows.map(r=>{
+    const [k,v,flagged] = r;
+    const cls = flagged===true ? 'flag-true' : (flagged===false ? 'flag-false' : '');
+    return `<div class="kv"><div class="k">${k}</div><div class="v ${cls}">${v}</div></div>`;
+  }).join('');
+}
+
+function buildStage(meta, sc){
+  const div = document.createElement('div');
+  div.className = 'stage';
+  let inner = `<h2><span class="num ${meta.cls}">${meta.num}</span>${meta.title}</h2>
+    <p class="layer-sub">${meta.sub}</p>`;
+
+  if(meta.key==='l1' || meta.key==='l2'){
+    const data = sc[meta.key];
+    inner += `<div class="panel-box"><h4>${data.heading}</h4>${buildKVRows(data.kv)}</div>
+      <div class="analyst-note"><b>Analyst note —</b> ${data.note}</div>`;
+  }
+  if(meta.key==='l3'){
+    const data = sc.l3;
+    inner += `<div class="panel-box"><h4>Triggered rules (worst severity wins for gating)</h4>` +
+      data.hits.map(h=>`<div class="rule-hit">${sevPill(h.sev)}<div class="rh-body"><b>${h.title}</b><span>${h.sub}</span></div></div>`).join('') +
+      `</div>
+      <div class="verdict-banner vb-${data.verdict}" style="margin-top:14px;">
+        <div class="icon">${iconFor(data.verdict)}</div>
+        <div><div>Engine verdict: ${data.verdict.toUpperCase()}</div><div class="sub">Computed before any local overrides are applied — this is what Layer 4 will receive next.</div></div>
+      </div>
+      <div class="analyst-note"><b>Analyst note —</b> ${data.note}</div>`;
+  }
+  if(meta.key==='l4'){
+    const data = sc.l4;
+    inner += `<div class="override-box ${data.applied ? 'applied':'none'}">
+        ${data.applied ? '<b>Override applied:</b> ' : '<b>No override applies:</b> '} ${data.text}
+      </div>
+      <div class="analyst-note"><b>Analyst note —</b> ${data.note}</div>`;
+  }
+  if(meta.key==='l5'){
+    const data = sc.l5;
+    inner += `<div class="verdict-banner vb-${data.verdict}">
+        <div class="icon">${iconFor(data.verdict)}</div>
+        <div><div>${data.bannerText}</div><div class="sub">${data.bannerSub}</div></div>
+      </div>
+      <div class="analyst-note"><b>Analyst note —</b> ${data.note}</div>`;
+  }
+
+  div.innerHTML = inner;
+  return div;
+}
+
+function iconFor(verdict){
+  switch(verdict){
+    case 'safe': return '✓';
+    case 'warning': return '!';
+    case 'danger': return '⚠';
+    case 'forbidden': return '✕';
+    default: return '•';
+  }
+}
+
+function showNextStage(){
+  if(!current){ return; }
+  stageIndex++;
+  if(stageIndex>4){ return; }
+  const meta = LAYER_META[stageIndex];
+  const stageEl = buildStage(meta, current);
+  stagesEl.appendChild(stageEl);
+  requestAnimationFrame(()=> requestAnimationFrame(()=> stageEl.classList.add('show')));
+  stageEl.scrollIntoView({behavior:'smooth', block:'center'});
+  renderProgress();
+
+  if(stageIndex===4){
+    nextBtn.textContent = 'Walkthrough complete';
+    nextBtn.disabled = true;
+  } else {
+    nextBtn.textContent = `Next layer → (${LAYER_META[stageIndex+1].title})`;
+  }
+}
+
+nextBtn.onclick = showNextStage;
+resetBtn.onclick = ()=>{
+  if(!current) return;
+  stageIndex = -1;
+  stagesEl.innerHTML = '';
+  renderProgress();
+  nextBtn.textContent = 'Start walkthrough →';
+  nextBtn.disabled = false;
+};
+
+// init
+renderPicker();
+renderProgress();
+selectScenario(SCENARIOS[0].id);
+</script>
+</body>
+</html>
