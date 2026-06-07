@@ -19,7 +19,7 @@
       { label: 'Signature Risk Explanations', href: 'rabby_placeholder_signature_risk.html' }
     ]},
     { label: 'Wallet Comparison', href: 'rabby_placeholder_wallet_comparison.html' },
-    { label: 'Proof of Concept', href: 'rabby_placeholder_proof_of_concept.html', soon: true },
+    { label: 'Proof of Concept', href: 'wallet_demo/frontend/index.html' },
     { label: 'Conclusion', href: 'rabby_placeholder_conclusion.html' },
     { label: 'References', href: 'rabby_placeholder_references.html' }
   ];
