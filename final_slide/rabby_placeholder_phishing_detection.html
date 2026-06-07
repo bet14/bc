@@ -75,8 +75,13 @@
       gap: 16px; margin: 20px 0;
     }
     .rule-card {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+      background: var(--bg2); border: 1px solid var(--border); border-left: 4px solid var(--border);
+      border-radius: 12px; padding: 18px;
     }
+    .rule-card.rc-danger { border-left-color: #fb923c; }
+    .rule-card.rc-forbidden { border-left-color: #ef4444; }
+    .rule-card.rc-warning { border-left-color: #facc15; }
+    .rule-card.rc-safe { border-left-color: #22c55e; }
     .rule-card .rule-id {
       display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
       color: var(--accent2); background: rgba(167,139,250,0.12);
@@ -92,6 +97,40 @@
     .level-danger { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.35); }
     .level-warning { background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.35); }
     .level-safe { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.35); }
+
+    /* architecture flow (5-layer) */
+    .arch-flow {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 20px 0 28px;
+    }
+    .arch-node {
+      flex: 0 0 auto; border-radius: 10px; padding: 12px 16px; font-size: 0.8rem; font-weight: 700;
+      text-align: center; min-width: 140px; border: 1px solid var(--border); color: var(--text);
+    }
+    .arch-node.trigger {
+      background: rgba(108,142,247,0.12); border: 2px solid var(--accent); color: var(--accent2);
+    }
+    .arch-node.al1 { background: rgba(108,142,247,.15); border-color: rgba(108,142,247,.4); }
+    .arch-node.al2 { background: rgba(167,139,250,.15); border-color: rgba(167,139,250,.4); }
+    .arch-node.al3 { background: rgba(251,146,60,.15); border-color: rgba(251,146,60,.4); color:#fb923c; }
+    .arch-node.al4 { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); color:#4ade80; }
+    .arch-node.al5 { background: rgba(92,200,255,.15); border-color: rgba(92,200,255,.4); color:#5cc8ff; }
+    .arch-arrow { flex: 0 0 auto; color: var(--text-muted); font-size: 1.1rem; }
+    @media (max-width: 900px) { .arch-flow { flex-direction: column; align-items: stretch; }
+      .arch-arrow { transform: rotate(90deg); align-self: center; } }
+
+    .ld-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .ld-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+      font-size: 0.84rem; line-height: 1.55;
+    }
+    .ld-card.al1 { border-top: 3px solid #6c8ef7; }
+    .ld-card.al2 { border-top: 3px solid #a78bfa; }
+    .ld-card.al3 { border-top: 3px solid #fb923c; }
+    .ld-card.al4 { border-top: 3px solid #22c55e; }
+    .ld-card.al5 { border-top: 3px solid #5cc8ff; }
+    .ld-card .ld-title { font-weight: 700; color: var(--text); margin-bottom: 8px; font-size: 0.92rem; }
+    .ld-card .ld-row { margin: 5px 0; color: var(--text-muted); }
+    .ld-card .ld-row b { color: var(--text); }
 
     /* layer list */
     .layer-list { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
@@ -139,6 +178,8 @@
       display: inline-block; font-size: 0.72rem; font-weight: 700; color: var(--accent);
       text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
     }
+    .scenario-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    @media (max-width: 880px) { .scenario-cols { grid-template-columns: 1fr; } }
     .vflow { display: flex; flex-direction: column; gap: 0; position: relative; }
     .vflow::before {
       content: ''; position: absolute; left: 6px; top: 22px; bottom: 22px; width: 2px; background: var(--border);
@@ -187,262 +228,270 @@
   <div id="main">
     <div class="hero">
       <div class="badge">Core Feature · Site-Level Defense</div>
-      <h1 class="title">How Rabby checks a dApp's origin before you ever connect</h1>
+      <h1 class="title">Checking a dApp's origin before a wallet connection is granted</h1>
       <p class="subtitle">Phishing detection in Rabby is not a single checkbox — it is a set of rules inside the
-        Security Engine that fire the moment a site requests a wallet connection. Multiple scam-list providers,
-        community signals, popularity data, and the user's own block/trust lists are combined into one risk
-        verdict shown on the connect screen.</p>
+        security engine that fire the moment a site requests a wallet connection. Multiple scam-list sources,
+        community signals, popularity data, and a person's own block and trust lists are combined into one
+        risk verdict shown on the connect screen.</p>
     </div>
 
     <!-- ===================== SECTION: Rules ===================== -->
     <section>
-      <h2 class="section-title">The rules behind it: <span>Connect-stage rules (1001–1070)</span></h2>
-      <p class="lede">Verified directly in <code class="inline">rabby-security-engine/src/rules/connect.ts</code>.
-        Each rule is an independent check that returns a value (boolean, count, or enum), which is then mapped to a
-        risk level — Safe, Warning, Danger, or Forbidden — by the engine's threshold logic.</p>
+      <h2 class="section-title">Detection rules at the connect stage <span>(rule set 1001–1070)</span></h2>
+      <p class="lede">Confirmed by inspecting the connect-rule definitions in the security engine module.
+        Each rule independently inspects the requesting site and returns a risk level — Safe, Warning,
+        Danger, or Forbidden — based on its own threshold.</p>
 
       <div class="rule-grid">
-        <div class="rule-card">
+        <div class="rule-card rc-danger">
           <span class="rule-id">RULE 1001</span>
-          <h4>Flagged as phishing by Rabby</h4>
-          <p>Calls the API method that checks whether the origin URL is marked as scam in Rabby's own
-            phishing database (provider name passed as "rabby").</p>
-          <span class="level-tag level-danger">Danger if true</span>
+          <h4>Flagged by Rabby's own phishing list</h4>
+          <p>The site address is checked against Rabby's internally maintained scam-site database.</p>
+          <span class="level-tag level-danger">Danger when matched</span>
         </div>
-        <div class="rule-card">
+        <div class="rule-card rc-danger">
           <span class="rule-id">RULE 1002</span>
-          <h4>Flagged as phishing by MetaMask</h4>
-          <p>Same lookup, but against MetaMask's eth-phishing-detect list (provider "metamask"), so Rabby
-            inherits a second, independently maintained blocklist.</p>
-          <span class="level-tag level-danger">Danger if true</span>
+          <h4>Flagged by MetaMask's phishing list</h4>
+          <p>The same address is also checked against MetaMask's independently maintained blocklist.</p>
+          <span class="level-tag level-danger">Danger when matched</span>
         </div>
-        <div class="rule-card">
+        <div class="rule-card rc-danger">
           <span class="rule-id">RULE 1003</span>
-          <h4>Flagged as phishing by ScamSniffer</h4>
-          <p>A third-party feed (provider "scamsniffer") that tracks community-reported drainer and scam
-            domains in near real time.</p>
-          <span class="level-tag level-danger">Danger if true</span>
+          <h4>Flagged by ScamSniffer's feed</h4>
+          <p>A third community security feed that tracks newly reported scam and drainer domains.</p>
+          <span class="level-tag level-danger">Danger when matched</span>
         </div>
-        <div class="rule-card">
+        <div class="rule-card rc-warning">
           <span class="rule-id">RULE 1004</span>
-          <h4>Community listing count</h4>
-          <p>How many third-party security/community platforms have indexed this site at all
-            (<code class="inline">communityCount</code>). Zero listings on any platform is treated as a
-            mild trust signal gap.</p>
-          <span class="level-tag level-warning">Warning if count = 0</span>
+          <h4>Community listing coverage</h4>
+          <p>How many independent security or community platforms have indexed the site at all.</p>
+          <span class="level-tag level-warning">Warning when zero platforms list it</span>
         </div>
-        <div class="rule-card">
+        <div class="rule-card rc-warning">
           <span class="rule-id">RULE 1005</span>
           <h4>Site popularity level</h4>
-          <p>An enum (very_low / low / medium / high) returned by Rabby's backend popularity scoring for
-            the origin. New or obscure domains naturally score lower.</p>
-          <span class="level-tag level-warning">Warning if "very_low"</span>
+          <p>A relative popularity score (very low, low, medium, high) computed by Rabby's backend.</p>
+          <span class="level-tag level-warning">Warning when popularity is very low</span>
         </div>
-        <div class="rule-card">
+        <div class="rule-card rc-forbidden">
           <span class="rule-id">RULE 1006</span>
-          <h4>On your personal blacklist</h4>
-          <p>Checks <code class="inline">userData.originBlacklist</code> — sites the user explicitly marked
-            as "Blocked" from the connect screen. This is a hard stop, regardless of what other rules say.</p>
-          <span class="level-tag level-forbidden">Forbidden if listed</span>
+          <h4>Site on the personal block list</h4>
+          <p>The site was explicitly marked as "Blocked" earlier — a hard stop independent of any other signal.</p>
+          <span class="level-tag level-forbidden">Forbidden when present</span>
         </div>
-        <div class="rule-card">
+        <div class="rule-card rc-safe">
           <span class="rule-id">RULE 1007</span>
-          <h4>On your personal whitelist</h4>
-          <p>Checks <code class="inline">userData.originWhitelist</code> — sites the user marked as
-            "Trusted". Lets a user override warnings for a site they personally vouch for.</p>
-          <span class="level-tag level-safe">Safe if listed</span>
+          <h4>Site on the personal trust list</h4>
+          <p>The site was explicitly marked as "Trusted" earlier, allowing a manual override of generic warnings.</p>
+          <span class="level-tag level-safe">Safe when present</span>
         </div>
-        <div class="rule-card">
+        <div class="rule-card rc-safe">
           <span class="rule-id">RULE 1070</span>
           <h4>Verified by Rabby</h4>
-          <p>Calls an endpoint that checks whether the project/origin has gone through Rabby's own
-            verification process (an allowlist of known-legitimate projects).</p>
-          <span class="level-tag level-safe">Safe if verified</span>
+          <p>The project has gone through Rabby's own verification process and sits on a known-legitimate allowlist.</p>
+          <span class="level-tag level-safe">Safe when verified</span>
         </div>
       </div>
 
       <div class="key-points">
-        <h3>How the final verdict is picked</h3>
+        <h3>How the final verdict is decided</h3>
         <ul>
-          <li>Every enabled rule produces at most one level: <code class="inline">forbidden</code>,
-            <code class="inline">danger</code>, <code class="inline">warning</code>, or
-            <code class="inline">safe</code>, decided by comparing the rule's returned value against its
-            threshold (see <code class="inline">strategyDecision.ts</code>).</li>
-          <li>The engine then resolves the overall result with a fixed priority order:
-            <code class="inline">FORBIDDEN &gt; DANGER &gt; WARNING &gt; SAFE</code> — the worst outcome wins.</li>
-          <li>So if rule 1006 (user blacklist) returns Forbidden, that single rule overrides every other
-            "safe" or "warning" signal — the connect button is effectively disabled with a clear warning.</li>
-          <li>Conversely, rule 1007 / 1070 ("trusted by you" / "verified by Rabby") can push an otherwise
-            unknown, low-popularity site into a Safe verdict — the user's own judgment is allowed to win
-            over generic popularity heuristics.</li>
+          <li>Each rule resolves independently to one level — Forbidden, Danger, Warning, or Safe — by
+            comparing its returned value against a configured threshold.</li>
+          <li>The engine then keeps only the single worst level across all rules, in fixed priority order:
+            Forbidden first, then Danger, then Warning, then Safe.</li>
+          <li>A personal block-list match (rule 1006) therefore overrides every other signal and effectively
+            halts the connection with a strong warning.</li>
+          <li>A personal trust-list match or Rabby verification (rules 1007 / 1070) can likewise lift an
+            otherwise low-popularity, unindexed site to a Safe verdict — manual judgment is allowed to win
+            over generic heuristics.</li>
         </ul>
-        <p class="source-note">Source: rabby-security-engine/src/rules/connect.ts,
-          rabby-security-engine/src/strategyDecision.ts, Rabby/src/ui/views/Approval/components/Connect/ConnectContent.tsx</p>
+        <p class="source-note">Source: connect-rule definitions and decision logic in the security engine
+          module, and the connect screen component in the wallet's approval flow.</p>
       </div>
     </section>
 
     <!-- ===================== SECTION: Layers ===================== -->
     <section>
-      <h2 class="section-title">Where this sits in the <span>5-layer detection architecture</span></h2>
-      <p class="lede">Phishing/site detection is the very first checkpoint a dApp interaction passes through —
-        before any contract, calldata, or signature is even examined.</p>
-      <div class="layer-list">
-        <div class="layer-item">
-          <div class="layer-num">1</div>
-          <div>
-            <h4>Origin / site-level checks (this feature)</h4>
-            <p>Connect rules 1001–1070 run as soon as a dApp calls <code class="inline">eth_requestAccounts</code>.
-              They decide whether the connect screen shows a green "Connect", a yellow caution banner, or a
-              red "this site is dangerous" block.</p>
+      <h2 class="section-title">How phishing detection maps onto the <span>five-layer architecture</span></h2>
+      <p class="lede">Rabby's overall fraud-detection design is organized into five layers — backend
+        intelligence, action analysis, the rule engine, locally stored user data, and the UI layer that
+        renders the verdict. Phishing and malicious-site detection is not a separate system; it is simply
+        how that same five-layer pipeline behaves at connection time, before any transaction exists yet.</p>
+      <div class="arch-flow">
+        <div class="arch-node trigger">Site requests<br>a connection</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node al1">Layer 1<br>Backend Intelligence</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node al2">Layer 2<br>Action Analysis</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node al3">Layer 3<br>Rule Engine</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node al4">Layer 4<br>Local User Data</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node al5">Layer 5<br>UI Layer</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node trigger">Person decides<br>whether to connect</div>
+      </div>
+
+      <h3 style="font-size:0.95rem; margin:0 0 14px; color: var(--accent);">What each layer does at the connect stage — detailed breakdown</h3>
+      <div class="ld-grid">
+        <div class="ld-card al1">
+          <div class="ld-title">Layer 1 — Backend Intelligence</div>
+          <div class="ld-row"><b>Receives:</b> the site address from the connect request</div>
+          <div class="ld-row"><b>Main job:</b> look the address up against external intelligence sources</div>
+          <div class="ld-row" style="color:var(--text-muted); font-size:0.8rem;">
+            Returns whether the address is flagged as a scam by Rabby's own list, by MetaMask's list, or
+            by the ScamSniffer feed, plus a popularity score and a count of how many community platforms
+            have indexed it.
           </div>
+          <div class="ld-row"><b>Passes on:</b> a structured site-intelligence object</div>
         </div>
-        <div class="layer-item">
-          <div class="layer-num">2</div>
-          <div>
-            <h4>Contract / address security checks</h4>
-            <p>Once connected, contract addresses the dApp interacts with are checked against Rabby's
-              contract risk database (deployment age, audit status, prior exploit reports).</p>
+        <div class="ld-card al2">
+          <div class="ld-title">Layer 2 — Action Analysis</div>
+          <div class="ld-row"><b>Receives:</b> the site-intelligence object from layer one</div>
+          <div class="ld-row"><b>Main job:</b> normalize that data into the shape the rule engine expects</div>
+          <div class="ld-row" style="color:var(--text-muted); font-size:0.8rem;">
+            A connection request carries no transaction to classify, so this layer's role is narrow here:
+            it packages the address, popularity level, and community count into one typed context object.
           </div>
+          <div class="ld-row"><b>Passes on:</b> the finished context object</div>
         </div>
-        <div class="layer-item">
-          <div class="layer-num">3</div>
-          <div>
-            <h4>Transaction simulation (pre-execution)</h4>
-            <p>Before signing, Rabby runs the transaction through a forked node to show the real, simulated
-              balance changes, gas usage, and approvals it would cause.</p>
+        <div class="ld-card al3">
+          <div class="ld-title">Layer 3 — Rule Engine</div>
+          <div class="ld-row"><b>Receives:</b> the context object from layer two</div>
+          <div class="ld-row"><b>Main job:</b> run every connect-stage rule and assign a severity to each</div>
+          <div class="ld-row" style="color:var(--text-muted); font-size:0.8rem;">
+            This is where phishing detection actually happens — the eight connect rules covered earlier
+            (the three scam-feed checks, community coverage, popularity, and the personal list and
+            verification checks) all evaluate the context at the same time.
           </div>
+          <div class="ld-row"><b>Passes on:</b> one finding per rule, each carrying its own severity</div>
         </div>
-        <div class="layer-item">
-          <div class="layer-num">4</div>
-          <div>
-            <h4>Signature / calldata risk parsing</h4>
-            <p>For off-chain signatures (permit, permit2, Seaport orders, etc.), Rabby decodes the payload
-              and explains in plain language what the user is about to authorize.</p>
+        <div class="ld-card al4">
+          <div class="ld-title">Layer 4 — Local User Data</div>
+          <div class="ld-row"><b>Receives:</b> the set of findings from layer three</div>
+          <div class="ld-row"><b>Main job:</b> apply the personal block-list and trust-list overrides</div>
+          <div class="ld-row" style="color:var(--text-muted); font-size:0.8rem;">
+            These lists live only on the person's own device and are never synced externally — which is
+            exactly what allows a manual "Trusted" or "Blocked" mark to take precedence over generic
+            automated findings from the earlier layers.
           </div>
+          <div class="ld-row"><b>Passes on:</b> the final, overall verdict</div>
         </div>
-        <div class="layer-item">
-          <div class="layer-num">5</div>
-          <div>
-            <h4>Address poisoning / approval hygiene checks</h4>
-            <p>Lookalike-address and excessive-approval checks run alongside the above to catch the more
-              subtle, longer-tail attack patterns.</p>
+        <div class="ld-card al5">
+          <div class="ld-title">Layer 5 — UI Layer</div>
+          <div class="ld-row"><b>Receives:</b> the final verdict from layer four</div>
+          <div class="ld-row"><b>Main job:</b> render that verdict and control what the person can do next</div>
+          <div class="ld-row" style="color:var(--text-muted); font-size:0.8rem;">
+            The connect screen shows the worst finding as a colored banner, lists every individual check
+            in an expandable breakdown, and disables the connect action outright when the verdict is
+            Forbidden.
           </div>
+          <div class="ld-row"><b>Outcome:</b> the connect screen the person actually sees and acts on</div>
         </div>
       </div>
     </section>
 
     <!-- ===================== SECTION: How it works flow ===================== -->
     <section>
-      <h2 class="section-title">How it works: <span>the connect-time check sequence</span></h2>
+      <h2 class="section-title">The site-level evaluation pipeline</h2>
+      <p class="lede">When a site requests a wallet connection, the wallet first gathers context about that
+        origin — its address, a popularity score, and how many community platforms have indexed it — then
+        runs every connect-stage rule against that context at once. From there the flow splits into two
+        clearly distinct branches depending on what the rules find.</p>
+
       <div class="flow-section">
-        <h3>Site-level evaluation pipeline</h3>
+        <h3>Shared starting point</h3>
         <div class="flow-diagram">
-          <div class="flow-node">User opens dApp,<br>clicks "Connect"</div>
+          <div class="flow-node">Site requests<br>a connection</div>
           <div class="flow-arrow">→</div>
-          <div class="flow-node">Rabby builds origin<br>context (URL, popularity,<br>community count)</div>
+          <div class="flow-node">Wallet gathers site<br>context: address,<br>popularity, community data</div>
           <div class="flow-arrow">→</div>
-          <div class="flow-node">Security Engine runs<br>rules 1001–1070<br>in parallel</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node">Engine resolves worst<br>level: Forbidden &gt;<br>Danger &gt; Warning &gt; Safe</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node outcome-block">Forbidden / Danger:<br>connect blocked or<br>strong warning shown</div>
-        </div>
-        <div class="flow-diagram" style="margin-top: 18px;">
-          <div class="flow-node">…or, if no high-risk<br>rule fires</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node outcome-allow">Safe / low-warning:<br>user proceeds to<br>connect normally</div>
+          <div class="flow-node">All connect-stage rules<br>evaluate the site<br>at the same time</div>
         </div>
       </div>
-      <p class="lede" style="margin-top:14px;">In code terms: <code class="inline">ConnectContent.tsx</code> assembles
-        a <code class="inline">ContextActionData</code> object — origin URL, <code class="inline">communityCount</code>
-        from <code class="inline">getOriginThirdPartyCollectList</code>, and <code class="inline">popularLevel</code>
-        from <code class="inline">getOriginPopularityLevel</code> — then calls
-        <code class="inline">executeEngine(ctx)</code>. The returned results array is rendered by
-        <code class="inline">RuleResult.tsx</code> as a list of pass/fail checks the user can expand.</p>
+
+      <div class="scenario-cols" style="margin-top:20px;">
+        <div class="flow-section" style="margin:0;">
+          <h3 style="color:#fb923c;">Scenario one — a high-risk signal is present</h3>
+          <div class="flow-diagram" style="flex-direction:column;">
+            <div class="flow-node" style="border-color:#ef4444;color:#f87171;">A Forbidden or Danger result<br>appears among the rules</div>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node" style="border-color:#ef4444;color:#f87171;">That result outranks every<br>Warning or Safe finding</div>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node outcome-block">Connection is halted or a<br>strong scam warning is shown</div>
+          </div>
+        </div>
+        <div class="flow-section" style="margin:0;">
+          <h3 style="color:#4ade80;">Scenario two — no high-risk signal appears</h3>
+          <div class="flow-diagram" style="flex-direction:column;">
+            <div class="flow-node" style="border-color:#facc15;color:#facc15;">At most mild Warning-level<br>findings are present</div>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node" style="border-color:#facc15;color:#facc15;">A caution note may be shown,<br>but nothing blocks the action</div>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node outcome-allow">Connection proceeds;<br>site can be marked Trusted</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="lede" style="margin-top:18px;">In practical terms, the connect screen assembles this site
+        context, hands it to the security engine, and renders the resulting list of checks as an expandable
+        breakdown the user can review before deciding whether to proceed.</p>
     </section>
 
     <!-- ===================== SECTION: Scenarios ===================== -->
     <section>
-      <h2 class="section-title">Scenario walkthroughs</h2>
-
-      <div class="scenario">
-        <span class="scenario-tag">Scenario A — known phishing clone</span>
-        <h4>User clicks a link to a fake "Uniswap" mirror site from a Discord DM</h4>
-        <div class="vflow">
-          <div class="vstep">
-            <div class="dot"></div>
-            <div class="content">
-              <h5>1. Connection request fires</h5>
-              <p>The fake site calls <code class="inline">eth_requestAccounts</code>; Rabby's connect screen opens
-                and starts the security check before showing any "Connect" affordance as safe.</p>
+      <h2 class="section-title">Scenarios</h2>
+      <div class="scenario-cols">
+        <div class="scenario" style="margin:0;">
+          <span class="scenario-tag" style="color:#fb923c;">A known phishing clone</span>
+          <h4>A link from a chat message leads to a fake mirror of a popular exchange dApp</h4>
+          <div class="flow-diagram" style="flex-direction:column; align-items:stretch;">
+            <div class="flow-node" style="border-color:var(--accent); text-align:left; min-width:0;">
+              <strong>The cloned site requests a wallet connection.</strong><br>
+              <span style="font-weight:400; color:var(--text-muted);">The connect screen opens and starts its security review before offering any way to proceed.</span>
             </div>
-          </div>
-          <div class="vstep">
-            <div class="dot"></div>
-            <div class="content">
-              <h5>2. Origin is checked against three independent scam lists</h5>
-              <p>Rules 1001, 1002, and 1003 each query a different provider for the same origin URL — Rabby's
-                own list, MetaMask's list, and ScamSniffer's feed. The clone domain is already present on at
-                least one of them, so the returned "is scam" value is true.</p>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node" style="border-color:var(--accent); text-align:left; min-width:0;">
+              <strong>The site address is checked against three scam-list sources at once.</strong><br>
+              <span style="font-weight:400; color:var(--text-muted);">The clone already appears on at least one of Rabby's, MetaMask's, or ScamSniffer's lists.</span>
             </div>
-          </div>
-          <div class="vstep">
-            <div class="dot"></div>
-            <div class="content">
-              <h5>3. Engine resolves the worst level</h5>
-              <p>One or more of those rules returns Danger. With no Forbidden rule firing, the overall verdict
-                is Danger — the priority order Forbidden, then Danger, then Warning, then Safe surfaces this
-                as the headline result.</p>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node" style="border-color:#fb923c; color:#fb923c; text-align:left; min-width:0;">
+              <strong>A Danger-level finding becomes the overall verdict.</strong><br>
+              <span style="font-weight:400; color:var(--text-muted);">No Forbidden finding is present, so Danger — the next most severe level — sets the result.</span>
             </div>
-          </div>
-          <div class="vstep end">
-            <div class="dot"></div>
-            <div class="content">
-              <h5>4. User sees a clear scam warning before connecting</h5>
-              <p>The connect screen renders a red banner explaining the website has been flagged as scam by
-                the named provider(s), and the user must consciously dismiss it to continue — most stop here.</p>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node outcome-block" style="text-align:left; min-width:0;">
+              <strong>A red scam warning appears before any connection is made.</strong><br>
+              <span style="font-weight:400; color:var(--text-muted);">Proceeding requires consciously dismissing that warning, which is enough to stop most people.</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="scenario">
-        <span class="scenario-tag">Scenario B — unknown but legitimate new project</span>
-        <h4>User wants to try a brand-new dApp that nobody has indexed yet</h4>
-        <div class="vflow">
-          <div class="vstep">
-            <div class="dot"></div>
-            <div class="content">
-              <h5>1. None of the scam-list rules fire</h5>
-              <p>Rules 1001–1003 each return false — the domain isn't on Rabby's, MetaMask's, or ScamSniffer's
-                lists. No Danger or Forbidden signal is produced from those checks.</p>
+        <div class="scenario" style="margin:0;">
+          <span class="scenario-tag" style="color:#4ade80;">A genuine but brand-new project</span>
+          <h4>An early visitor opens a freshly launched dApp that no directory has indexed yet</h4>
+          <div class="flow-diagram" style="flex-direction:column; align-items:stretch;">
+            <div class="flow-node" style="border-color:var(--accent); text-align:left; min-width:0;">
+              <strong>The same three scam-list checks run and find no match.</strong><br>
+              <span style="font-weight:400; color:var(--text-muted);">The address appears on none of Rabby's, MetaMask's, or ScamSniffer's lists, so no Danger finding is produced.</span>
             </div>
-          </div>
-          <div class="vstep">
-            <div class="dot"></div>
-            <div class="content">
-              <h5>2. Low-signal rules produce mild warnings</h5>
-              <p>Rule 1004 sees a community count of zero (not indexed anywhere yet) and rule 1005 sees a
-                popularity level of "very low" (brand new domain) — both resolve to Warning.</p>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node" style="border-color:#facc15; color:#facc15; text-align:left; min-width:0;">
+              <strong>Two low-signal checks register mild cautions instead.</strong><br>
+              <span style="font-weight:400; color:var(--text-muted);">No community platform has indexed the site yet, and its popularity score is very low simply because the domain is new.</span>
             </div>
-          </div>
-          <div class="vstep">
-            <div class="dot"></div>
-            <div class="content">
-              <h5>3. Overall verdict: Warning, not a hard block</h5>
-              <p>With no Forbidden or Danger rule firing, the worst level present is Warning — Rabby shows a
-                caution note explaining the site has very low popularity and hasn't been listed anywhere, but
-                still lets the user proceed if they choose to.</p>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node" style="border-color:#facc15; color:#facc15; text-align:left; min-width:0;">
+              <strong>The overall verdict settles at Warning, not a block.</strong><br>
+              <span style="font-weight:400; color:var(--text-muted);">A caution note explains the low popularity and lack of listings, but the path forward stays open.</span>
             </div>
-          </div>
-          <div class="vstep endsafe">
-            <div class="dot"></div>
-            <div class="content">
-              <h5>4. User can mark the site as "Trusted" going forward</h5>
-              <p>If the user is confident the project is legitimate, they can add it to their personal
-                whitelist (rule 1007). On future visits this resolves to Safe and suppresses the recurring
-                warning — without ever needing to wait for Rabby's backend to "catch up" and index the new
-                domain.</p>
+            <div class="flow-arrow" style="transform:rotate(90deg);">→</div>
+            <div class="flow-node outcome-allow" style="text-align:left; min-width:0;">
+              <strong>The site can be marked as trusted for future visits.</strong><br>
+              <span style="font-weight:400; color:var(--text-muted);">Once satisfied it is legitimate, a person can add it to a personal trust list, which resolves later visits to Safe without waiting for any external directory to catch up.</span>
             </div>
           </div>
         </div>
@@ -461,15 +510,13 @@
       <div class="key-points">
         <h3>Practical takeaways</h3>
         <ul>
-          <li>Three independently maintained scam-list providers (Rabby, MetaMask, ScamSniffer) are queried
-            in parallel, so a clone only needs to appear on one list to be caught — reducing single-source
-            blind spots.</li>
-          <li>Popularity and community-listing signals give Rabby a way to flag suspicious-but-not-yet-listed
-            domains, instead of only reacting after a site is formally reported as a scam.</li>
-          <li>User-controlled block/trust lists (rules 1006/1007) make the final call sit with the user —
-            Rabby surfaces the evidence, but a personal "Trusted" mark can override a generic low-popularity
-            warning, and a personal "Blocked" mark hard-stops a site regardless of what the automated
-            providers say.</li>
+          <li>Three independently maintained scam-site sources are consulted in parallel, so a clone only
+            needs to appear on one of them to be caught — reducing reliance on any single source.</li>
+          <li>Popularity and community-listing signals allow suspicious-but-not-yet-reported domains to be
+            flagged early, rather than waiting for a formal scam report to arrive.</li>
+          <li>Personal block and trust lists keep the final decision with the person using the wallet —
+            the evidence is surfaced clearly, a "Trusted" mark can override a generic low-popularity
+            caution, and a "Blocked" mark halts a site outright regardless of what the automated sources say.</li>
         </ul>
       </div>
     </section>

@@ -3,29 +3,43 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Rabby Wallet — Address & Contract Risk Labels</title>
+<title>Rabby Wallet — Address Poisoning &amp; Contract Risk Labels</title>
 <link rel="stylesheet" href="rabby_sidebar.css">
 <style>
-:root, [data-theme="dark"] {
+:root {
   --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
   --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
   --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
-  --accent: #6c8ef7; --accent2: #a78bfa;
-  --radius: 10px; --transition: 0.25s ease;
+  --accent: #6c8ef7; --accent2: #a78bfa; --green: #34d399;
+  --amber: #fbbf24; --red: #f87171;
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
 }
 [data-theme="light"] {
   --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
   --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
-  --accent: #4361ee; --accent2: #7c3aed;
+  --accent: #4361ee; --accent2: #7c3aed; --green: #059669;
+  --amber: #d97706; --red: #dc2626;
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.65; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.65;
+}
 #topbar {
   position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
   background: var(--bg2); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 18px; gap: 14px;
 }
-#topbar h1 { font-size: 16px; font-weight: 700; flex: 1; margin:0; }
+#topbar h1 { font-size: 16px; font-weight: 700; flex: 1; }
 #topbar h1 span { color: var(--accent); }
 #theme-btn {
   background: var(--bg3); border: 1px solid var(--border); color: var(--text);
@@ -33,47 +47,344 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   transition: background var(--transition);
 }
 #theme-btn:hover { background: var(--border); }
-#main { margin-top: 52px; padding: 32px 40px 80px; max-width: 1180px; margin-left: auto; margin-right: auto; }
+#main {
+  margin-top: 84px;
+  padding: 0 40px 80px;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
 h1 {
-  font-size: 30px; margin: 0 0 6px; letter-spacing: .2px;
+  font-size: 30px;
+  margin: 0 0 6px;
+  letter-spacing: .2px;
   background: linear-gradient(90deg, var(--accent), var(--accent2));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-.kicker { color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
-.subtitle { color: var(--text-muted); font-size: 15px; margin: 0 0 22px; max-width: 760px; }
+h2 { font-size: 22px; font-weight: 700; margin: 0 0 6px; color: var(--text); }
+h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; color: var(--accent); }
+.kicker {
+  color: var(--text-muted); font-size: 13px; text-transform: uppercase;
+  letter-spacing: 1.5px; margin-bottom: 6px;
+}
+.subtitle { color: var(--text-muted); font-size: 15px; margin: 0 0 22px; }
 .slide {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 40px 36px; margin-bottom: 28px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
-  text-align: center;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 36px;
+  margin-bottom: 28px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
 }
-.soon-badge {
-  display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .5px;
-  text-transform: uppercase; padding: 5px 14px; border-radius: 999px; margin-bottom: 18px;
-  background: rgba(108,142,247,.12); color: var(--accent); border: 1px solid rgba(108,142,247,.35);
+.card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
 }
-.slide h2 { font-size: 20px; margin-bottom: 10px; color: var(--text); }
-.slide p { color: var(--text-muted); font-size: 14px; max-width: 620px; margin: 0 auto; line-height: 1.7; }
+.card-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.card-row .card { flex: 1; min-width: 280px; }
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--bg3);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.callout-title { font-weight: 700; margin-bottom: 4px; font-size: 14px; }
+.quote {
+  border-left: 3px solid var(--accent2);
+  background: var(--bg3);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 14px 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.7;
+}
+.quote b { color: var(--text); font-style: normal; }
+.note {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg3);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.note b { color: var(--text); }
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin: 2px 4px 2px 0;
+}
+.b-safe { background: rgba(39,193,147,.15); color: var(--safe); border: 1px solid rgba(39,193,147,.4); }
+.b-warn { background: rgba(255,176,32,.15); color: var(--warning); border: 1px solid rgba(255,176,32,.4); }
+.b-danger { background: rgba(236,81,81,.15); color: var(--danger); border: 1px solid rgba(236,81,81,.4); }
+.b-forbidden { background: rgba(175,22,14,.15); color: var(--forbidden); border: 1px solid rgba(175,22,14,.4); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+th {
+  text-align: left; padding: 9px 12px; background: var(--bg2); color: var(--text-muted);
+  font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1px solid var(--border); font-weight: 600;
+}
+td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+td.id { color: var(--accent); font-weight: 700; font-family: var(--font-mono); white-space: nowrap; }
+.module-tag {
+  display: inline-block;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
 .footer-tag { color: var(--text-muted); font-size: 12px; text-align: center; margin-top: 8px; }
+.pipeline { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
+.pnode {
+  flex: 1; min-width: 160px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 14px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.pnode b { display: block; font-size: 14px; margin-bottom: 5px; color: var(--accent); }
+.pnode span { display: block; color: var(--text-muted); font-size: 11.5px; line-height: 1.55; margin-top: 3px; }
+.arrow { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 20px; min-width: 22px; }
+ul.feature-list { margin: 8px 0 0; padding-left: 18px; color: var(--text-muted); font-size: 13.5px; line-height: 1.65; }
+ul.feature-list li { margin-bottom: 6px; }
+ul.feature-list b { color: var(--text); }
+
+/* Five-layer architecture diagram */
+.arch-flow {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 20px;
+}
+.flow-node {
+  flex: 0 0 auto; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 16px; font-size: 12.5px; color: var(--text); font-weight: 600;
+  text-align: center; min-width: 138px;
+}
+.flow-node.trigger {
+  background: linear-gradient(135deg, rgba(255,200,0,.18), rgba(255,138,76,.18));
+  border: 2px solid var(--danger); color: var(--danger); font-weight: 800;
+}
+.flow-node.l1 { background: rgba(124,158,255,.15); border-color: rgba(124,158,255,.4); }
+.flow-node.l2 { background: rgba(155,124,255,.15); border-color: rgba(155,124,255,.4); }
+.flow-node.l3 { background: rgba(255,138,76,.15); border-color: rgba(255,138,76,.4); }
+.flow-node.l4 { background: rgba(62,207,142,.15); border-color: rgba(62,207,142,.4); }
+.flow-node.l5 { background: rgba(92,200,255,.15); border-color: rgba(92,200,255,.4); }
+.flow-arrow { flex: 0 0 auto; color: var(--text-muted); font-size: 18px; }
+.layer-details { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 8px; }
+.ld-card {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+  font-size: 12px; line-height: 1.6;
+}
+.ld-card .ld-title { font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+.ld-card .ld-row { margin: 5px 0; color: var(--text-muted); }
+.ld-card .ld-row b { color: var(--text); }
+@media (max-width: 1040px) {
+  .layer-details { grid-template-columns: repeat(2, 1fr); }
+}
 </style>
 </head>
 <body>
 <div id="topbar">
-  <h1>Rabby Wallet — <span>Address & Contract Risk Labels</span></h1>
+  <h1>Rabby Wallet — <span>Address Poisoning &amp; Contract Risk Labels</span></h1>
   <button id="theme-btn" onclick="toggleTheme()">Light mode</button>
 </div>
+
 <div id="main">
   <div class="kicker">Fraud Detection Features</div>
-  <h1>Address & Contract Risk Labels</h1>
-  <p class="subtitle">How Rabby labels addresses and contracts as verified, flagged, newly deployed, or previously interacted with — and how address-poisoning attempts are filtered out.</p>
-
-  <div class="slide">
-    <div class="soon-badge">Coming soon</div>
-    <h2>This deep-dive session is in progress</h2>
-    <p>This session will cover addrDesc metadata, contract-age checks, scam-flag sources, and address-poisoning detection in transfer history.</p>
+  <h1>Address Poisoning &amp; Contract Risk Labels</h1>
+  <p class="subtitle"><b style="color:var(--text);">Two related defenses</b> sit on the "who am I sending to / who is asking me to sign" side of Rabby: filtering poisoned-lookalike transfers out of transaction history, and surfacing plain-language risk labels — scam address, contract type, exchange-deposit mismatch — the moment an address is typed into a send flow.</p>
+  <div class="callout" style="margin-top:-6px;">
+    <div class="callout-title">In short</div>
+    One defense cleans up what the sender already sees (history). The other warns the sender before a new address is even used (send flow). Both reuse the same backend signals and the same five-layer pipeline — just triggered earlier than a normal sign-request check.
   </div>
 
-  <div class="footer-tag">Placeholder page — will be replaced with a full research session</div>
+  <!-- SECTION 1: ADDRESS POISONING -->
+  <div class="slide">
+    <h2>1. Address Poisoning Defense</h2>
+    <p class="subtitle">Address poisoning is an attack in which an adversary sends a tiny, often zero-value, transfer from a wallet address generated to visually resemble one a holder has genuinely transacted with before. The aim is not to move funds in that moment — it is to plant a lookalike entry inside the holder's transaction history, hoping a later careless copy-paste from that history sends real funds to the attacker's address instead of the intended one.</p>
+
+    <div class="card-row">
+      <div class="card" style="flex-basis:100%;">
+        <h3>How it works</h3>
+        <div class="pipeline">
+          <div class="pnode"><b>Backend flags the transfer</b>A backend check labels suspicious incoming transfers as scam before the wallet displays them.<span>plain gloss: a "this looks fake" stamp added server-side, ahead of display</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>History view tags it</b>A flagged row gets a visible "Scam" badge with a tooltip and is dimmed to about half opacity — present, but visually marked as suspicious.<span>plain gloss: greyed-out row + warning label, not a deletion</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Copy button disappears</b>The flagged row's address display loses its copy-to-clipboard icon — the exact click the attack is fishing for is no longer available.<span>plain gloss: no copy icon on rows marked as scam</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Same rule, every screen</b>The same scam check dims and tags entries consistently in the dashboard, the desktop view, and the grouping logic — one signal applied everywhere an address could be copied from.<span>plain gloss: one flag, reused across every history surface</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Modules involved</h3>
+        <div class="module-tag">TxHistoryItemRow.is_scam (backend-supplied flag)</div>
+        <div class="module-tag">HistoryItem — tag-scam badge + opacity-50</div>
+        <div class="module-tag">TxInterAddressExplain — NameAndAddress copyIcon</div>
+        <div class="module-tag">DesktopTxExplain / DesktopHistoryItem</div>
+        <div class="module-tag">db/hooks/history — !item.is_scam grouping flag</div>
+        <div class="note"><b>Why the copy icon matters most:</b> dimming a row only helps a holder who is paying close attention. Removing the copy affordance removes the mechanical step the attack is actually betting on — one-click reuse of an address straight out of history, without the holder ever needing to notice the visual warning at all.</div>
+      </div>
+    </div>
+
+    <div class="quote">
+      Independent research backs up why this filtering step matters: in their evaluation of 53 Ethereum wallets, Guan &amp; Li (2025) specifically singled out Rabby for having <b>"transfers flagged as scam transactions"</b> — naming it as a distinguishing trait rather than a baseline expectation.
+    </div>
+    <div class="callout">
+      <div class="callout-title">In short</div>
+      A look-alike address gets sent into the sender's history hoping to be copied by accident later. Rabby's backend marks that entry as scam, the history view greys it out with a warning badge, and — the key step — removes its copy button so it physically cannot be reused with one click.
+    </div>
+    <div class="callout">
+      <div class="callout-title">Why this is rare among wallets</div>
+      Most wallets simply list every incoming and outgoing transfer exactly as the chain reports it, with no scam-likelihood judgment attached. That leaves the entire burden of spotting a poisoned lookalike on the holder's eyesight — precisely the weakness the attack is engineered to exploit. Filtering and tagging at the history layer, before any address is ever displayed as copyable, is the part most competing wallets skip.
+    </div>
+  </div>
+
+  <!-- SECTION 2: ADDRESS & CONTRACT RISK LABELS -->
+  <div class="slide">
+    <h2>2. Address &amp; Contract Risk Labels</h2>
+    <p class="subtitle">Separate from history filtering, Rabby evaluates the destination address itself the moment it is entered into a send flow — before any transaction is built — and renders a small set of plain-language labels describing what kind of address it is and why that might matter.</p>
+
+    <div class="card-row">
+      <div class="card" style="flex-basis:100%;">
+        <h3>How it works</h3>
+        <div class="pipeline">
+          <div class="pnode"><b>Address gets looked up</b>The moment a destination is typed, Rabby asks its backend what it knows about that address — contract details, scam flags, exchange identity.<span>plain gloss: a quick background check on the address</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Result becomes a short label list</b>That lookup is turned into a handful of plain-language labels rather than a wall of raw data.<span>plain gloss: raw data → a few readable tags</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Labels get ranked by seriousness</b>Each label has a fixed importance level, so the most worrying one always shows first — no matter what order the data arrived in.<span>plain gloss: scariest label always shown on top</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>A confirmation screen sums it up</b>A drawer shows the ranked labels plus the address type (personal wallet, multisig, exchange, contract) — a verdict, not a data dump.<span>plain gloss: one clear screen — "here's what this address is, and why to be careful"</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Modules involved</h3>
+        <div class="module-tag">useAddressRisks (hooks/useAddressRisk)</div>
+        <div class="module-tag">AddressRiskAlert / AddressTypeCard / RiskRow</div>
+        <div class="module-tag">wallet.openapi.addrDesc</div>
+        <div class="module-tag">wallet.getCexId</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">In short</div>
+      Before sending, Rabby checks the destination address and turns whatever it finds into a short, ranked list of plain labels — "this looks like a scam," "this is a contract, not a wallet," "this exchange address won't accept deposits," and so on — so the sender sees a verdict rather than raw lookup data.
+    </div>
+    <div class="callout">
+      <div class="callout-title">The five label types, in priority order (highest concern first)</div>
+      <table>
+        <colgroup><col style="width:16%"><col style="width:20%"><col style="width:64%"></colgroup>
+        <tr><th>Label</th><th>Trigger condition</th><th>What it tells the sender, in plain language</th></tr>
+        <tr><td class="id">FORBIDDEN_TIP</td><td>A server-side block on this specific send</td><td>The backend has actively refused to let this transfer go through as described — the strongest stop signal the system can issue, ranked above every other label.</td></tr>
+        <tr><td class="id">SCAM_ADDRESS</td><td><code>is_danger</code> or <code>is_scam</code> on the address profile</td><td>Shown as: <span class="badge b-danger">scam address warning</span> — this destination has already been flagged as dangerous or implicated in scams by Rabby's backend.</td></tr>
+        <tr><td class="id">CONTRACT_ADDRESS</td><td>Address resolves to a contract, and is not a recognized multisig</td><td>Shown as: <span class="badge b-warn">this is a contract, not a personal wallet</span> — sending ordinary transfers to a contract address can mean funds land somewhere never meant to receive them directly.</td></tr>
+        <tr><td class="id">CEX_NO_DEPOSIT</td><td>Address belongs to a known exchange but is not a valid deposit address</td><td>Shown as: <span class="badge b-warn">this exchange address does not accept deposits</span> — sending to it risks funds the exchange will not credit to any account.</td></tr>
+        <tr><td class="id">NEVER_SEND</td><td>No prior outgoing transfer from this account to this address</td><td>Shown as: <span class="badge b-safe">first time sending here</span> — a softer, informational nudge rather than a danger signal: simply "double-check this one, it's new."</td></tr>
+      </table>
+    </div>
+    <div class="note"><b>Why ranking matters as much as detection:</b> a single address can trigger more than one label at once — for example, a contract that is also flagged as dangerous. <code>sortRisksDesc</code> guarantees the sender's eye lands on <i>scam address</i> before <i>this is a contract</i>, so attention goes to the label that should actually change the decision, not whichever one happened to load first.</div>
+
+    <div class="grid" style="margin-top:18px;">
+      <div class="card">
+        <h3>Contract reputation, reused from the rule engine</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;line-height:1.65;">When the destination resolves to a contract, the same reputation checks the rule engine runs for token approvals are available to describe it here too: whether it is an externally-owned account masquerading as a contract destination (rule 1022), whether it was deployed less than three days ago (rule 1024), whether Rabby has independently flagged it (rule 1029), and whether it carries zero measurable trust value (rule 1150). The result is that a "this is a contract" label is never just that bare fact — it travels with the same age, verification, and reputation context a holder would otherwise only see deep inside an approval screen.</p>
+      </div>
+      <div class="card">
+        <h3>Whitelist guard as the override layer</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;line-height:1.65;">An address the sender has explicitly placed on a personal whitelist is treated differently: Rabby renders a distinct "whitelist guard" indicator instead of running it through the same alarm path as an unknown destination. This is the same Layer-4 idea used throughout the engine — a holder's own, on-device judgment can soften (never silently remove) what the automated layers would otherwise surface.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: FIVE-LAYER MAPPING -->
+  <div class="slide">
+    <h2>3. How It Works Maps Onto the Five-Layer Architecture</h2>
+    <p class="subtitle">Both features above are not separate systems bolted onto Rabby — they are two passes of the same five-layer pipeline that evaluates every signature request, just triggered earlier: at the moment an address is typed or a history list renders, rather than at the moment a transaction is about to be signed.</p>
+    <div class="callout">
+      <div class="callout-title">In short</div>
+      Same five steps every time: get the facts (backend), shape them (analysis), turn them into ranked labels (rules), let personal whitelists soften them (local data), and show the verdict (UI). These two features just run that pipeline at "address typed" or "history loaded" instead of "about to sign."
+    </div>
+
+    <div class="arch-flow">
+      <div class="flow-node trigger">Address entered<br>or history loads</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l1">Layer 1<br>Backend Intel</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l2">Layer 2<br>Action Analysis</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l3">Layer 3<br>Rule Engine</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l4">Layer 4<br>Local Overrides</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l5">Layer 5<br>UI Display</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node trigger">Sender decides</div>
+    </div>
+
+    <h3 style="font-size:14px; margin:24px 0 12px; color:var(--accent);">What each layer contributes to these two features specifically</h3>
+    <div class="layer-details">
+      <div class="ld-card">
+        <div class="ld-title">Layer 1: Backend Intelligence</div>
+        <div class="ld-row"><b>Supplies:</b> the raw judgment calls neither the wallet nor the chain can make alone</div>
+        <div class="ld-row"><span style="color:var(--text-muted);">• plain gloss: a scam stamp on each transfer record<br>• plain gloss: a profile of the address — contract or not, dangerous or not, how old, how trusted<br>• plain gloss: is this a known exchange address?</span></div>
+      </div>
+      <div class="ld-card">
+        <div class="ld-title">Layer 2: Action Analysis</div>
+        <div class="ld-row"><b>Supplies:</b> the typed, structured shape the next layer needs to reason over</div>
+        <div class="ld-row"><span style="color:var(--text-muted);">• plain gloss: tidies the raw profile into the shape the rule step needs (is it a contract? dangerous? exchange-deposit ok? sent here before?)<br>• plain gloss: for history rows, just passes the scam stamp along — nothing more to figure out</span></div>
+      </div>
+      <div class="ld-card">
+        <div class="ld-title">Layer 3: Rule Engine</div>
+        <div class="ld-row"><b>Supplies:</b> the named, ranked verdicts a sender actually reads</div>
+        <div class="ld-row"><span style="color:var(--text-muted);">• plain gloss: turns raw flags into a ranked, plain-language label list — blocked → scam → contract → exchange-deposit issue → first-time send<br>• plain gloss: for contracts, the same checks used on approval screens (how old, verified, flagged, trusted) add context to the "this is a contract" label</span></div>
+      </div>
+      <div class="ld-card">
+        <div class="ld-title">Layer 4: Local User Data</div>
+        <div class="ld-row"><b>Supplies:</b> the sender's own, on-device judgment as an override</div>
+        <div class="ld-row"><span style="color:var(--text-muted);">• plain gloss: an address the sender already trusts gets a calm "whitelist guard" mark instead of an alarm<br>• plain gloss: personal trust can soften a warning — it never makes one disappear silently</span></div>
+      </div>
+      <div class="ld-card">
+        <div class="ld-title">Layer 5: UI Layer</div>
+        <div class="ld-row"><b>Supplies:</b> the surfaces the sender actually sees and acts on</div>
+        <div class="ld-row"><span style="color:var(--text-muted);">• plain gloss: in history — a "Scam" badge, a greyed-out row, no copy button<br>• plain gloss: in the send flow — a confirmation drawer with the ranked labels and an address-type summary, the final plain verdict before funds move</span></div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:18px;">
+      <div class="callout-title">Scenario: a poisoned lookalike sits in the sender's history</div>
+      <p style="margin-bottom:10px;">A sender opens their transaction list to copy a contact's address from a transfer made three weeks ago. Sitting just above it is a near-zero transfer from an address differing by two characters — planted to be copied by mistake.</p>
+      <div class="pipeline">
+        <div class="pnode"><b>L1 — already judged it</b>The planted transfer was evaluated when history synced and came back marked as scam.</div>
+        <div class="arrow">→</div>
+        <div class="pnode"><b>L2 — passes the mark along</b>That mark travels straight into the row's display data — nothing new to work out.</div>
+        <div class="arrow">→</div>
+        <div class="pnode"><b>L3 — no fresh ruling needed</b>The backend's scam call already <i>is</i> the verdict for this row.</div>
+        <div class="arrow">→</div>
+        <div class="pnode"><b>L4 — whitelist doesn't apply</b>It would only soften things if the sender had whitelisted this exact address — impossible, since it was freshly made for this attack.</div>
+        <div class="arrow">→</div>
+        <div class="pnode"><b>L5 — shows it, disarms it</b>Row appears greyed out with a "Scam" badge and <i>no copy button</i>. Visible for transparency, but not reusable. The real contact's row just below stays full-opacity with its copy button intact.</div>
+      </div>
+      <p style="margin-top:10px;color:var(--text-muted);font-size:13px;">→ The defense wins not by hiding the attack, but by removing the one mechanical action — the copy click — the whole attack depends on.</p>
+    </div>
+  </div>
+
+  <div class="footer-tag">Source: Rabby transaction-history components and hooks (HistoryItem, TxInterAddressExplain, db/hooks/history), address-risk hook and components (useAddressRisk, AddressRiskAlert, AddressTypeCard, RiskRow), and the shared rule-engine contract-reputation rules (1022/1024/1029/1150) · Guan &amp; Li (2025), wallet security evaluation</div>
 </div>
+
 <script>
 function toggleTheme() {
   const html = document.documentElement;
