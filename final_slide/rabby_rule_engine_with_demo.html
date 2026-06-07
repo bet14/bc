@@ -608,6 +608,7 @@ canvas {
     padding: 20px 18px;
   }
 }
+.job-highlight { background: rgba(108,142,247,.16); border-left: 3px solid var(--accent); padding: 4px 8px; border-radius: 4px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -647,31 +648,31 @@ canvas {
       <div class="arch-card">
         <div class="title">RuleConfig</div>
         <div class="row"><b>Contains:</b> about 89 plain checks, grouped into 24 files for different actions such as connecting a site, sending tokens, swapping, or approving a spender. Each check carries an identifier, an on/off switch, a plain-language description of what it checks, the kind of value it returns, a default safety threshold that the user can override, a list of transaction contexts it applies to, and an async function that fetches the actual value to evaluate.</div>
-        <div class="row"><b>Job:</b> describe <i>what</i> to check and <i>where the threshold sits</i> — the data fetch and the decision are handled elsewhere</div>
+        <div class="row job-highlight"><b>Job:</b> describe <i>what</i> to check and <i>where the threshold sits</i> — the data fetch and the decision are handled elsewhere</div>
         <div class="row"><b>Logic:</b> declarative — it does not carry its own decision logic; it only supplies the raw value, while the threshold later determines which severity it maps to</div>
       </div>
       <div class="arch-card">
         <div class="title">Engine</div>
         <div class="row"><b>Contains:</b> the constructed instance that holds the active checklist plus a reference to Rabby's data service</div>
-        <div class="row"><b>Job:</b> orchestrate evaluation and expose the methods needed by the wallet's service layer</div>
+        <div class="row job-highlight"><b>Job:</b> orchestrate evaluation and expose the methods needed by the wallet's service layer</div>
         <div class="row"><b>Logic:</b> a thin wrapper that wires the checklist and the data service together, then hands off to running the checks whenever the wallet needs a check</div>
       </div>
       <div class="arch-card">
         <div class="title">engine.run(context)</div>
         <div class="row"><b>Contains:</b> the function that actually executes a check — it takes one context object describing the current action, such as the site, address, contract, or amount</div>
-        <div class="row"><b>Job:</b> evaluate every enabled check against that context and collect what each one finds</div>
+        <div class="row job-highlight"><b>Job:</b> evaluate every enabled check against that context and collect what each one finds</div>
         <div class="row"><b>Logic:</b> runs every enabled checker in parallel, catches per-check failures, and forwards each resolved value to the decision step</div>
       </div>
       <div class="arch-card">
         <div class="title">strategyDecision()</div>
         <div class="row"><b>Contains:</b> a pure decision step plus a fixed priority list</div>
-        <div class="row"><b>Job:</b> turn one check's raw value and threshold into a single severity level</div>
+        <div class="row job-highlight"><b>Job:</b> turn one check's raw value and threshold into a single severity level</div>
         <div class="row"><b>Logic:</b> compares the value against each threshold band; if more than one band matches, the worst matching level wins — no scores, no weights, just ordered comparison</div>
       </div>
       <div class="arch-card">
         <div class="title">Result[]</div>
         <div class="row"><b>Contains:</b> one entry per check that crossed a threshold, with the check identifier, severity, raw value, explanation, enabled state, and threshold</div>
-        <div class="row"><b>Job:</b> hand a flat, ungrouped list of hits back to the wallet interface</div>
+        <div class="row job-highlight"><b>Job:</b> hand a flat, ungrouped list of hits back to the wallet interface</div>
         <div class="row"><b>Logic:</b> the engine itself does not sort, group, or choose an overall winner — that aggregation happens one layer up in the wallet</div>
       </div>
     </div>

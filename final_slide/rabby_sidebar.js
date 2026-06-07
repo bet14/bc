@@ -16,7 +16,7 @@
       { label: 'Approval Risk Alerts', href: 'rabby_approval_alerts_feature.html' },
       { label: 'Phishing & Malicious Site Detection', href: 'rabby_placeholder_phishing_detection.html' },
       { label: 'Address Poisoning Filtering', href: 'rabby_placeholder_address_labels.html' },
-      { label: 'Signature Risk Explanations', href: 'rabby_placeholder_signature_risk.html' }
+      { label: 'Signature Parsing', href: 'rabby_placeholder_signature_parsing.html' }
     ]},
     { label: 'Wallet Comparison', href: 'rabby_placeholder_wallet_comparison.html' },
     { label: 'Proof of Concept', href: 'wallet_demo/frontend/index.html' },

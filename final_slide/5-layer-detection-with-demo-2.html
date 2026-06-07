@@ -234,6 +234,7 @@
   .layer-block{
     cursor:default !important;
   }
+.job-highlight { background: rgba(108,142,247,.16); border-left: 3px solid var(--accent); padding: 4px 8px; border-radius: 4px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -273,35 +274,35 @@
       <div class="ld-card">
         <div class="title">Layer 1: Backend Intelligence</div>
         <div class="row"><b>Input:</b> Raw calldata (0x...) + sender address</div>
-        <div class="row"><b>Main job:</b> Decode and contextualize raw requests</div>
+        <div class="row job-highlight"><b>Main job:</b> Decode and contextualize raw requests</div>
         <div class="row"><span style="color:var(--muted); font-size:11px;">• <code>parseTx</code>: convert calldata hex → human-readable action (e.g. "swap 1 ETH for USDC", "approve 50k tokens to spender")<br>• <code>preExecTx</code>: simulate execution on-chain, show balance deltas before signing<br>• <code>addrDesc</code>: fetch metadata on contract/EOA (verified? labeled? age? scam flags?)</span></div>
         <div class="row"><b>Output:</b> TxContext object with: decoded action, simulated state changes, address risk profile</div>
       </div>
       <div class="ld-card">
         <div class="title">Layer 2: Action Analysis</div>
         <div class="row"><b>Input:</b> TxContext from Layer 1 + on-chain lookups</div>
-        <div class="row"><b>Main job:</b> Classify request type and gather decision-relevant facts</div>
+        <div class="row job-highlight"><b>Main job:</b> Classify request type and gather decision-relevant facts</div>
         <div class="row"><span style="color:var(--muted); font-size:11px;">• <code>parseAction</code>: which template? (tokenApprove, swap, send, permit, buyNFT, etc.)<br>• <code>fetchActionRequiredData</code>: pull on-chain facts needed by Layer 3 rules (token prices, contract deploy date, approval history, spender risk exposure)<br>• <code>formatContext</code>: pack everything into typed ActionContext object</span></div>
         <div class="row"><b>Output:</b> ActionContext — clean, typed object ready for rule evaluation</div>
       </div>
       <div class="ld-card">
         <div class="title">Layer 3: Rule Engine</div>
         <div class="row"><b>Input:</b> ActionContext from Layer 2</div>
-        <div class="row"><b>Main job:</b> Evaluate risk signals and assign severity</div>
+        <div class="row job-highlight"><b>Main job:</b> Evaluate risk signals and assign severity</div>
         <div class="row"><span style="color:var(--muted); font-size:11px;">• 24 action-specific rule modules (e.g. connect, send, swap, tokenApprove, nftApprove, permit2) aggregated by index.ts into ~89 distinct rule IDs (1001–1154)<br>• E.g. real tokenApprove rules: "is spender an EOA?" (1022), "spender contract deployed &lt; 3 days ago" (1024), "spender's trust value is $0 / zero risk exposure" (1150), "spender is a flagged risky contract" (1029)<br>• engine.run() runs every rule's getValue() in parallel and returns one Result per rule that crosses its threshold (level: SAFE/WARNING/DANGER/FORBIDDEN/ERROR)</span></div>
         <div class="row"><b>Output:</b> Result[] — a flat list of triggered rules, each carrying its own id, level, value and threshold (the engine itself does not aggregate them or pick a "worst severity" — that comparison happens downstream in the wallet UI)</div>
       </div>
       <div class="ld-card">
         <div class="title">Layer 4: Local User Data</div>
         <div class="row"><b>Input:</b> Result[] from Layer 3 + user's local lists (device-only, never cloud)</div>
-        <div class="row"><b>Main job:</b> Apply on-device whitelist/blacklist overrides</div>
+        <div class="row job-highlight"><b>Main job:</b> Apply on-device whitelist/blacklist overrides</div>
         <div class="row"><span style="color:var(--muted); font-size:11px;">• originBlacklist: "block dapps from these domains"<br>• contractWhitelist: "trust these contracts, suppress low-priority warnings"<br>• addressBlacklist: "I was scammed by this address, never auto-approve"<br>• Can downgrade verdict (DANGER → SAFE) after explicit user confirmation</span></div>
         <div class="row"><b>Output:</b> Final verdict (may suppress, downgrade, or pass through)</div>
       </div>
       <div class="ld-card">
         <div class="title">Layer 5: UI Layer</div>
         <div class="row"><b>Input:</b> Final verdict from Layer 4 + rule details</div>
-        <div class="row"><b>Main job:</b> Render verdict and control user action</div>
+        <div class="row job-highlight"><b>Main job:</b> Render verdict and control user action</div>
         <div class="row"><span style="color:var(--muted); font-size:11px;">• SecurityListItem: show each rule as colored badge<br>• RuleDrawer: expand to see plain-language explanation + data that triggered it<br>• ProcessedRules summary: "X Safe, Y Warning, Z Danger, W Forbidden"<br>• Sign button gate: FORBIDDEN = disabled, DANGER = require modal confirm, WARNING/SAFE = normal flow</span></div>
         <div class="row"><b>Output:</b> Approval screen user sees; controls whether Sign button is clickable</div>
       </div>
