@@ -603,7 +603,6 @@ function boot() {
     users.push({ name: "Demo User", email: "demo@chainshield.local", password: "password" });
     save(storageKeys.users, users);
   }
-  const session = load(storageKeys.session, null);
   save(storageKeys.wallet, walletState);
   renderSettings();
   renderProfile();
@@ -612,10 +611,6 @@ function boot() {
   renderApprovals();
   applyRisk(calculateRisk(scenarios.low));
   renderWallet();
-  if (session) {
-    elements.loginScreen.classList.add("hidden");
-    elements.app.classList.remove("hidden");
-  }
 }
 
 elements.loginForm.addEventListener("submit", handleAuth);
