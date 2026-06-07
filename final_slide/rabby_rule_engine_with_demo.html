@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rabby Wallet — Rules Engine</title>
+<link rel="stylesheet" href="rabby_sidebar.css">
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+  --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+  --accent: #6c8ef7; --accent2: #a78bfa; --green: #34d399;
+  --amber: #fbbf24; --red: #f87171;
+  --chart-grid: rgba(255,255,255,0.06);
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
+}
+[data-theme="light"] {
+  --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+  --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+  --accent: #4361ee; --accent2: #7c3aed; --green: #059669;
+  --amber: #d97706; --red: #dc2626;
+  --chart-grid: rgba(0,0,0,0.08);
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* ─── TOPBAR ─── */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 18px; gap: 14px;
+}
+#topbar h1 { font-size: 16px; font-weight: 700; flex: 1; }
+#topbar h1 span { color: var(--accent); }
+#theme-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+  transition: background var(--transition);
+}
+#theme-btn:hover { background: var(--border); }
+
+/* ─── MAIN CONTENT ─── */
+#main {
+  margin-top: 52px;
+  padding: 32px 40px 80px;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ─── HEADINGS & TEXT ─── */
+h1 {
+  font-size: 30px;
+  margin: 0 0 6px;
+  letter-spacing: .2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 24px 0 6px;
+  color: var(--text);
+}
+h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--accent);
+}
+.kicker {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+.subtitle {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin: 0 0 22px;
+}
+.page-subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+
+/* ─── CARDS & CONTAINERS ─── */
+.slide {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 36px;
+  margin-bottom: 28px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 18px;
+}
+.card-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.card-row .card {
+  flex: 1;
+  min-width: 280px;
+  margin-bottom: 0;
+}
+
+/* ─── CALLOUT ─── */
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--bg3);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.callout-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.note {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg3);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.note b{
+  color: var(--text);
+}
+
+/* ─── PIPELINE & ARCHITECTURE ─── */
+.pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0 6px;
+}
+.pnode{
+  flex: 1;
+  min-width: 150px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text);
+}
+.pnode b{
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+.pnode .pnode-tag{
+  display: block;
+  margin-bottom: 4px;
+}
+.pnode .pnode-explain{
+  display: block;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin-top: 3px;
+}
+.arrow{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 20px;
+  min-width: 24px;
+}
+
+.arch-grid{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+.arch-card{
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.arch-card .title{
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 7px;
+  font-size: 13px;
+}
+.arch-card .row{
+  margin: 5px 0;
+  color: var(--text-muted);
+}
+.arch-card .row b{
+  color: var(--text);
+  display: inline;
+}
+.arch-card code{
+  background: #0f1525;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #c9d4ee;
+}
+
+/* ─── SOURCE FLOW ─── */
+.src-flow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.src-node{
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--text);
+  flex: 1;
+  min-width: 170px;
+}
+.src-node b{
+  display: block;
+  color: var(--accent);
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+/* ─── GRIDS ─── */
+.grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.grid3{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* ─── BADGE ─── */
+.badge{
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin: 2px 4px 2px 0;
+}
+.b-safe, .badge-safe{
+  background: rgba(62,207,142,.15);
+  color: var(--safe);
+  border: 1px solid rgba(62,207,142,.4);
+}
+.b-warn, .badge-warning{
+  background: rgba(245,197,66,.15);
+  color: var(--warning);
+  border: 1px solid rgba(245,197,66,.4);
+}
+.b-danger, .badge-danger{
+  background: rgba(255,138,76,.15);
+  color: var(--danger);
+  border: 1px solid rgba(255,138,76,.4);
+}
+.b-forbidden, .badge-forbidden{
+  background: rgba(255,92,92,.15);
+  color: var(--forbidden);
+  border: 1px solid rgba(255,92,92,.4);
+}
+.b-error, .badge-error{
+  background: rgba(154,167,194,.15);
+  color: var(--err);
+  border: 1px solid rgba(154,167,194,.4);
+}
+
+/* ─── TABLE ─── */
+table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  margin-top: 8px;
+}
+th{
+  text-align: left;
+  padding: 9px 12px;
+  background: var(--bg3);
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+td{
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: top;
+}
+td.id{
+  color: var(--accent);
+  font-weight: 700;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+/* ─── SCENARIO BUTTONS ─── */
+.scenario-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.scenario-btn {
+  flex: 1;
+  min-width: 130px;
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition);
+}
+.scenario-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.scenario-btn .sc-name {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.scenario-btn .sc-tag {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.scenario-btn.active {
+  border-width: 2px;
+}
+.sc-forbidden .sc-tag {
+  background: rgba(175,22,14,.2);
+  color: #f87171;
+}
+.sc-forbidden.active {
+  border-color: var(--forbidden);
+  background: rgba(175,22,14,.08);
+}
+.sc-danger .sc-tag {
+  background: rgba(236,81,81,.15);
+  color: #f87171;
+}
+.sc-danger.active {
+  border-color: var(--danger);
+  background: rgba(236,81,81,.08);
+}
+.sc-warning .sc-tag {
+  background: rgba(255,176,32,.15);
+  color: var(--amber);
+}
+.sc-warning.active {
+  border-color: var(--warning);
+  background: rgba(255,176,32,.08);
+}
+.sc-safe .sc-tag {
+  background: rgba(39,193,147,.15);
+  color: var(--green);
+}
+.sc-safe.active {
+  border-color: var(--safe);
+  background: rgba(39,193,147,.08);
+}
+.sc-error .sc-tag {
+  background: rgba(180,189,204,.15);
+  color: var(--err);
+}
+.sc-error.active {
+  border-color: var(--err);
+  background: rgba(180,189,204,.08);
+}
+
+/* ─── SLIDERS & OPTIONS ─── */
+.slider-group {
+  margin-bottom: 22px;
+}
+.slider-group label {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.slider-group label span {
+  color: var(--accent);
+  font-size: 15px;
+}
+input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--bg3);
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg2);
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg2);
+  cursor: pointer;
+}
+.opt-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.opt-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.opt-btn {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all var(--transition);
+}
+.opt-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ─── SIMULATION RESULT ─── */
+.sim-result {
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  transition: border-color .3s;
+}
+.sim-result.safe {
+  border-color: var(--green);
+}
+.sim-result.warning {
+  border-color: var(--amber);
+}
+.sim-result.danger {
+  border-color: var(--red);
+}
+.sim-result.forbidden {
+  border-color: #AF160E;
+  background: rgba(175,22,14,.07);
+}
+.sim-result.error {
+  border-color: var(--err);
+}
+.sim-result-label {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.sim-rules {
+  margin-top: 10px;
+}
+.sim-rule-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sim-rule-item:last-child {
+  border-bottom: none;
+}
+.rule-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 42px;
+}
+
+/* ─── CHART ─── */
+.chart-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.chart-wrap h3 {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+canvas {
+  display: block;
+  width: 100% !important;
+}
+
+/* ─── FOOTER ─── */
+.footer-tag{
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* ─── SECTION DIVIDER ─── */
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 60px 0;
+  position: relative;
+}
+.section-divider::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg);
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:1100px){
+  .arch-grid{
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media(max-width:700px){
+  .arch-grid{
+    grid-template-columns: repeat(2, 1fr);
+  }
+  #main {
+    padding: 24px 18px 60px;
+  }
+  .slide {
+    padding: 20px 18px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>Rabby Wallet — <span>Rules Engine</span></h1>
+  <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
+</div>
+
+<div id="main">
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PART 1: PRESENTATION SLIDES                                         -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <!-- SLIDE 1: Architecture -->
+  <div class="slide">
+    <div class="kicker">Rabby Wallet · Risk Detection</div>
+    <h1>Rules Engine</h1>
+    <div class="subtitle">A standalone package that powers the scoring layer behind every "this looks risky" prompt in Rabby.</div>
+
+    <h2>Architecture</h2>
+    <div class="subtitle">5 pieces hand a transaction down a line:</div>
+    <div class="pipeline">
+      <div class="pnode"><b>RuleConfig</b><span class="pnode-tag">~89 rule definitions</span><span class="pnode-explain">A list of risk checks Rabby already knows how to run.</span></div>
+      <div class="arrow">→</div>
+      <div class="pnode"><b>Engine</b><span class="pnode-tag">(checklist, data service)</span><span class="pnode-explain">The engine that holds this checklist plus a connection to Rabby's data service.</span></div>
+      <div class="arrow">→</div>
+      <div class="pnode"><b>engine.run(context)</b><span class="pnode-tag">parallel evaluation</span><span class="pnode-explain">Runs every check on the current transaction at the same time, instead of one after another.</span></div>
+      <div class="arrow">→</div>
+      <div class="pnode"><b>strategyDecision()</b><span class="pnode-tag">value → level</span><span class="pnode-explain">Looks at what each check found and decides how serious it is.</span></div>
+      <div class="arrow">→</div>
+      <div class="pnode"><b>Result[]</b><span class="pnode-tag">flat list of hits</span><span class="pnode-explain">The final list of warnings Rabby will show for this transaction.</span></div>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <div class="title">RuleConfig</div>
+        <div class="row"><b>Contains:</b> about 89 plain checks, grouped into 24 files for different actions such as connecting a site, sending tokens, swapping, or approving a spender. Each check carries an identifier, an on/off switch, a plain-language description of what it checks, the kind of value it returns, a default safety threshold that the user can override, a list of transaction contexts it applies to, and an async function that fetches the actual value to evaluate.</div>
+        <div class="row"><b>Job:</b> describe <i>what</i> to check and <i>where the threshold sits</i> — the data fetch and the decision are handled elsewhere</div>
+        <div class="row"><b>Logic:</b> declarative — it does not carry its own decision logic; it only supplies the raw value, while the threshold later determines which severity it maps to</div>
+      </div>
+      <div class="arch-card">
+        <div class="title">Engine</div>
+        <div class="row"><b>Contains:</b> the constructed instance that holds the active checklist plus a reference to Rabby's data service</div>
+        <div class="row"><b>Job:</b> orchestrate evaluation and expose the methods needed by the wallet's service layer</div>
+        <div class="row"><b>Logic:</b> a thin wrapper that wires the checklist and the data service together, then hands off to running the checks whenever the wallet needs a check</div>
+      </div>
+      <div class="arch-card">
+        <div class="title">engine.run(context)</div>
+        <div class="row"><b>Contains:</b> the function that actually executes a check — it takes one context object describing the current action, such as the site, address, contract, or amount</div>
+        <div class="row"><b>Job:</b> evaluate every enabled check against that context and collect what each one finds</div>
+        <div class="row"><b>Logic:</b> runs every enabled checker in parallel, catches per-check failures, and forwards each resolved value to the decision step</div>
+      </div>
+      <div class="arch-card">
+        <div class="title">strategyDecision()</div>
+        <div class="row"><b>Contains:</b> a pure decision step plus a fixed priority list</div>
+        <div class="row"><b>Job:</b> turn one check's raw value and threshold into a single severity level</div>
+        <div class="row"><b>Logic:</b> compares the value against each threshold band; if more than one band matches, the worst matching level wins — no scores, no weights, just ordered comparison</div>
+      </div>
+      <div class="arch-card">
+        <div class="title">Result[]</div>
+        <div class="row"><b>Contains:</b> one entry per check that crossed a threshold, with the check identifier, severity, raw value, explanation, enabled state, and threshold</div>
+        <div class="row"><b>Job:</b> hand a flat, ungrouped list of hits back to the wallet interface</div>
+        <div class="row"><b>Logic:</b> the engine itself does not sort, group, or choose an overall winner — that aggregation happens one layer up in the wallet</div>
+      </div>
+    </div>
+    <div class="note">Aggregation across multiple fired checks — in other words, the overall verdict when several checks fire at once — is not part of this engine. The wallet reduces the final list with the same forbidden > danger > warning > safe priority to compute a single security level that gates the Sign button. There is no numeric risk score anywhere in this pipeline.</div>
+  </div>
+
+  <!-- SLIDE 2: Risk data sources -->
+  <div class="slide">
+    <h2>Where the Risk Data Comes From</h2>
+    <div class="subtitle">Whenever a check needs to fetch real data, it goes through one single gateway — Rabby's own data service, pointed at its backend server — and that gateway in turn draws on three distinct sources of risk data.</div>
+    <div class="src-flow">
+      <div class="src-node"><b>1 · Internal — Rabby's own backend</b>Rabby's own server provides the core risk numbers and its own scam-site list: the backend endpoint supplies risk exposure, danger signals, whether an address is an externally owned account, contract age, and checks whether a site is marked as scam by Rabby.</div>
+      <div class="arrow">+</div>
+      <div class="src-node"><b>2 · External — phishing lists, proxied</b>Phishing lists from external providers are queried through Rabby's data service. The wallet never calls these third parties directly.</div>
+      <div class="arrow">+</div>
+      <div class="src-node"><b>3 · Local — on-device user lists</b>Each user keeps a private blacklist and whitelist that stays on their own device and is never synced to the cloud.</div>
+    </div>
+    <div class="note">
+      <div style="margin-bottom:6px;"><b>Phishing/scam signal:</b> a mix of Rabby's own scam database plus outside phishing lists, all reached through one data gateway — the wallet never contacts the outside lists directly.</div>
+      <div><b>Community reports:</b> the outside lists are crowd-sourced upstream, and each user can keep their own private on-device blacklist — there is no in-app report button in the client code.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: Rule Categories -->
+  <div class="slide">
+    <h2>Rule Categories</h2>
+    <div class="subtitle">The source code does not group checks into umbrella categories — it ships 24 action-specific modules plus a shared helper set, gathered into one master list. Those modules plus a few shared checks add up to 89 total checks.</div>
+    <table>
+      <colgroup>
+        <col style="width:20%">
+        <col style="width:30%">
+        <col style="width:8%">
+        <col style="width:42%">
+      </colgroup>
+      <tr><th>Area</th><th>User flow it fires on</th><th>Checks</th><th>Representative check</th></tr>
+      <tr><td>Connecting a site</td><td>Connecting a site or dapp to the wallet</td><td class="id">8</td><td>A site may be flagged as phishing by Rabby <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Sending tokens</td><td>Sending native token or ETH</td><td class="id">8</td><td>The recipient may be a token-contract address <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>NFT transfer</td><td>Transferring an NFT</td><td class="id">5</td><td>The recipient may be a non-deposit CEX address <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Cross-chain transfer</td><td>Cross-chain token transfer</td><td class="id">4</td><td>The recipient address may be unknown <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Token approval</td><td>Approving a token spender</td><td class="id">4</td><td>The spender may be an externally owned account <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Revoking approval</td><td>Revoking a token approval</td><td class="id">1</td><td>Abnormal gas may be required for the transaction <span class="badge b-warn">warning</span></td></tr>
+      <tr><td>NFT approval</td><td>Approving a single NFT</td><td class="id">4</td><td>The spender may be an externally owned account <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Collection approval</td><td>Approving an entire NFT collection</td><td class="id">4</td><td>The spender may be an externally owned account <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Permit signing</td><td>Signing a permit message</td><td class="id">4</td><td>The spender may be an externally owned account <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Permit2 signing</td><td>Signing a Permit2 message</td><td class="id">4</td><td>The spender may be a risky contract <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Batch Permit2</td><td>Batch-signing Permit2 approvals</td><td class="id">4</td><td>The spender contract trust value may be zero <span class="badge b-warn">warning</span></td></tr>
+      <tr><td>Swap</td><td>Swapping tokens on a DEX</td><td class="id">5</td><td>A fake token may be expected to be received <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Swap order</td><td>Signing a swap order</td><td class="id">4</td><td>The user may not receive any assets from the order <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Cross-chain swap</td><td>Cross-chain swap</td><td class="id">4</td><td>The recipient address may be unknown <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Wrap or unwrap</td><td>Wrapping or unwrapping a token</td><td class="id">4</td><td>The token received may not match the token paid <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Add liquidity</td><td>Adding liquidity to a DeFi pool</td><td class="id">2</td><td>The pool price may differ greatly from the market price <span class="badge b-danger">danger</span>/<span class="badge b-warn">warning</span></td></tr>
+      <tr><td>Sell NFT</td><td>Listing or selling an NFT</td><td class="id">4</td><td>A fake token may be expected to be received <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Batch sell NFT</td><td>Batch-listing or selling NFTs</td><td class="id">4</td><td>A fake token may be expected to be received <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Buy NFT</td><td>Buying an NFT</td><td class="id">3</td><td>The recipient of the NFT may not be the user's address <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Asset order</td><td>Signing a generic asset order</td><td class="id">1</td><td>The user may not receive any assets from the order <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Key creation</td><td>Creating or importing a key</td><td class="id">1</td><td>Weak or risky key-creation patterns are flagged <span class="badge b-warn">warning</span></td></tr>
+      <tr><td>Ownership transfer</td><td>Transferring contract ownership</td><td class="id">1</td><td>Ownership-transfer transactions are flagged for extra review <span class="badge b-danger">danger</span></td></tr>
+      <tr><td>Address verification</td><td>Verifying an address before an action</td><td class="id">1</td><td>The address being verified is checked against known risk data <span class="badge b-warn">warning</span></td></tr>
+      <tr><td>Shared helpers</td><td>Reusable checks shared by other action types</td><td class="id">1</td><td>A baseline check shared across multiple action types <span class="badge b-warn">warning</span></td></tr>
+      <tr><td>Shared checks</td><td>Shared checks used across multiple action contexts</td><td class="id">4</td><td>A blocked spender, a blocked contract, a trusted spender, and a risky contract</td></tr>
+    </table>
+  </div>
+
+  <!-- SLIDE 4: Severity levels -->
+  <div class="slide">
+    <h2>Severity Levels</h2>
+    <div class="subtitle">Defined as a single severity scale; the decision step resolves a check's raw value against its threshold into one of these.</div>
+    <div class="grid3">
+      <div class="card">
+        <span class="badge b-forbidden">forbidden</span>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:13.5px;line-height:1.6;">The transaction is blocked outright — the user cannot proceed. This is reserved for confirmed scam or blocked addresses and known phishing sites.</p>
+      </div>
+      <div class="card">
+        <span class="badge b-danger">danger</span>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:13.5px;line-height:1.6;">A strong warning that requires the user to actively confirm before continuing — for example, approving a spender that is an externally owned account, or interacting with a risky contract.</p>
+      </div>
+      <div class="card">
+        <span class="badge b-warn">warning</span>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:13.5px;line-height:1.6;">An informational yellow flag — for example, sending to a brand-new address or a freshly deployed contract. It does not block the flow.</p>
+      </div>
+      <div class="card">
+        <span class="badge b-safe">safe</span>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:13.5px;line-height:1.6;">The check explicitly passed — used to build user confidence rather than staying silent.</p>
+      </div>
+      <div class="card">
+        <span class="badge b-error">error</span>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:13.5px;line-height:1.6;">Not a real risk tier — emitted only when a checker fails during execution, so the failure itself is surfaced as a result.</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:6px;">Resolution priority</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;line-height:1.6;">When several thresholds could apply — whether within one check or across many fired checks — the same fixed order wins:</p>
+        <p style="margin-top:8px;"><span class="badge b-forbidden">forbidden</span> &gt; <span class="badge b-danger">danger</span> &gt; <span class="badge b-warn">warning</span> &gt; <span class="badge b-safe">safe</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Customization -->
+  <div class="slide">
+    <h2>Rule Customization</h2>
+    <div class="subtitle">Handled in the service layer that wraps the engine inside the wallet.</div>
+    <div class="grid">
+      <div class="card">
+        <h3>Per-rule user settings</h3>
+        <ul style="margin:8px 0 0; padding-left:18px; color:var(--text-muted); font-size:13.5px; line-height:1.6;">
+          <li style="margin-bottom:5px;"><b style="color:var(--text);">Stored</b> as a simple user setting with an identifier, an on/off switch, and a custom threshold</li>
+          <li style="margin-bottom:5px;">The service can <b style="color:var(--text);">turn a check on or off</b></li>
+          <li style="margin-bottom:5px;"><b style="color:var(--text);">Numeric and boolean thresholds</b> can be adjusted per check through the custom threshold</li>
+          <li style="margin-bottom:5px;">The <b style="color:var(--text);">saved settings are merged</b> onto the shipped defaults</li>
+          <li style="margin-bottom:5px;">The <b style="color:var(--text);">engine is rebuilt</b> with the merged checklist whenever settings change</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What customization does <i>not</i> do</h3>
+        <ul style="margin:8px 0 0; padding-left:18px; color:var(--text-muted); font-size:13.5px; line-height:1.6;">
+          <li style="margin-bottom:5px;">There is <b style="color:var(--text);">no direct level override</b> — the user cannot remap a check from danger to warning or silence it at the severity layer</li>
+          <li style="margin-bottom:5px;">The only levers are: <b style="color:var(--text);">turn the check fully on or off</b>, or move the threshold that decides when it fires</li>
+          <li style="margin-bottom:5px;"><b style="color:var(--text);">Custom checks are not injected</b> from external configuration — the checklist is fixed in the shipped package, only tunable per identifier</li>
+        </ul>
+        <div class="note">In short: customization in Rabby today is enable or disable plus threshold tuning, not arbitrary severity remapping or pluggable custom-check injection.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-tag">Source: Rabby security engine package, rule files, decision logic, background service, and wallet approval interface</div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION DIVIDER                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="section-divider" data-label="Interactive Demo"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PART 2: INTERACTIVE DEMO                                            -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <h2>Interactive Rules Engine Checker</h2>
+  <p class="page-subtitle">Configure a transaction scenario manually with the controls below, or click a preset scenario button to instantly load a pre-built case and see exactly which rules in <code style="font-family:var(--font-mono);background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;">@rabby-wallet/rabby-security-engine</code> fire, what severity each one reports, and how the overall verdict is computed.</p>
+
+  <div class="callout">
+    <div class="callout-title">How the overall verdict is computed</div>
+    Every fired rule reports its own level. The wallet then reduces the full list with a fixed priority order — <strong>FORBIDDEN &gt; DANGER &gt; WARNING &gt; SAFE &gt; ERROR</strong> — and keeps only the single worst level as the transaction's overall <code style="font-family:var(--font-mono);background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:12px;">securityLevel</code>. One FORBIDDEN hit locks the Sign button no matter how many SAFE or WARNING rules also fired.
+  </div>
+
+  <h3>Preset Scenarios</h3>
+  <p class="page-subtitle" style="margin-bottom:14px;">Click any button to load that scenario's parameters and instantly see the engine's verdict.</p>
+  <div class="scenario-row" id="scenario-row"></div>
+
+  <div class="card-row">
+    <div class="card">
+      <h3 style="margin-top:0;">Transaction Parameters</h3>
+
+      <div class="slider-group">
+        <label>Approval Amount <span id="val-amount">Unlimited</span></label>
+        <input type="range" id="sl-amount" min="0" max="3" value="3" oninput="onManualChange()"/>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px;">
+          <span>Small</span><span>Medium</span><span>Large</span><span>Unlimited</span>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <label>Contract Age <span id="val-age">Brand New (&lt;1 day)</span></label>
+        <input type="range" id="sl-age" min="0" max="3" value="0" oninput="onManualChange()"/>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px;">
+          <span>&lt;1 day</span><span>2 days</span><span>1 week</span><span>1+ year</span>
+        </div>
+      </div>
+
+      <div class="opt-label">Spender Type</div>
+      <div class="opt-row">
+        <button class="opt-btn active" id="btn-spender-eoa" onclick="setSpender('eoa')">EOA (wallet)</button>
+        <button class="opt-btn" id="btn-spender-contract" onclick="setSpender('contract')">Contract</button>
+      </div>
+
+      <div class="opt-label">Address Status</div>
+      <div class="opt-row">
+        <button class="opt-btn active" id="btn-status-unknown" onclick="setStatus('unknown')">Unknown</button>
+        <button class="opt-btn" id="btn-status-scam" onclick="setStatus('scam')">Known Scam</button>
+        <button class="opt-btn" id="btn-status-white" onclick="setStatus('white')">Whitelisted</button>
+        <button class="opt-btn" id="btn-status-black" onclick="setStatus('black')">Blacklisted</button>
+      </div>
+
+      <div class="opt-label">Trust Value (DeBank score)</div>
+      <div class="opt-row">
+        <button class="opt-btn active" id="btn-trust-zero" onclick="setTrust('zero')">$0 (None)</button>
+        <button class="opt-btn" id="btn-trust-low" onclick="setTrust('low')">Low</button>
+        <button class="opt-btn" id="btn-trust-high" onclick="setTrust('high')">High</button>
+      </div>
+
+      <div class="opt-label">DeBank API Status</div>
+      <div class="opt-row">
+        <button class="opt-btn active" id="btn-api-ok" onclick="setApi(false)">Normal</button>
+        <button class="opt-btn" id="btn-api-timeout" onclick="setApi(true)">Timeout / Error</button>
+      </div>
+    </div>
+
+    <div class="card" id="sim-result-card">
+      <h3 style="margin-top:0;">Security Engine Result</h3>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">Overall <span style="opacity:.6">·</span> <span id="active-scenario-tag">Custom</span></div>
+      <div id="sim-result" class="sim-result">
+        <div class="sim-result-label" id="sim-overall-label">Overall: DANGER</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;" id="sim-overall-desc">Multiple risk signals detected. Review each rule below.</div>
+        <div class="sim-rules" id="sim-rules-list"></div>
+        <div style="margin-top:14px;font-size:13px;color:var(--text-muted);" id="sim-action-label"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <h3>Rule Severity Distribution for this scenario</h3>
+    <canvas id="chart-rules" height="140"></canvas>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Rule reference used in this demo</h3>
+    <table>
+      <thead><tr>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);border-bottom:1px solid var(--border);">Rule ID</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);border-bottom:1px solid var(--border);">Level</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);border-bottom:1px solid var(--border);">Trigger condition</th>
+      </tr></thead>
+      <tbody id="rule-reference-body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+// ── RULE DEFINITIONS (mirrors @rabby-wallet/rabby-security-engine sample logic) ──
+const RULE_DEFS = [
+  { id: '1022', level: 'DANGER',  desc: 'Spender is an EOA (wallet address), not a contract', cond: 'Spender Type = EOA' },
+  { id: '1039', level: 'DANGER',  desc: 'Infinite (unlimited) approval amount requested', cond: 'Approval Amount = Unlimited' },
+  { id: '1024', level: 'WARNING', desc: 'Contract deployed less than 3 days ago', cond: 'Contract Age = <1 day or 2 days' },
+  { id: '1150', level: 'WARNING', desc: 'Spender contract has $0 trust value on DeBank — no users, no liquidity, no history', cond: 'Trust Value = $0 (and DeBank API responds normally)' },
+  { id: '1150', level: 'ERROR',   desc: 'DeBank trust-value lookup failed (API timeout) — engine could not evaluate this rule', cond: 'Trust Value = $0 and DeBank API Status = Timeout / Error' },
+  { id: '1029', level: 'DANGER',  desc: 'Address is flagged in Rabby\'s global scam database', cond: 'Address Status = Known Scam' },
+  { id: '1134', level: 'FORBIDDEN', desc: 'Contract is on your personal blacklist — hard block, cannot be ignored', cond: 'Address Status = Blacklisted' },
+  { id: '1133', level: 'SAFE',    desc: 'Contract is on your personal whitelist', cond: 'Address Status = Whitelisted' },
+];
+
+// ── PRESET SCENARIOS ───────────────────────────────────────────────────────
+const SCENARIOS = [
+  { key: 'sce1', label: 'Sce 1', tag: 'FORBIDDEN', cls: 'sc-forbidden',
+    params: { amount: 3, age: 0, spender: 'eoa', status: 'black', trust: 'zero', apiError: false },
+    note: 'Blacklisted spender stacked with several other red flags — FORBIDDEN wins the priority reduction regardless of how many other rules also fire.' },
+  { key: 'sce2', label: 'Sce 2', tag: 'FORBIDDEN', cls: 'sc-forbidden',
+    params: { amount: 1, age: 3, spender: 'contract', status: 'black', trust: 'high', apiError: false },
+    note: 'Otherwise "clean-looking" transaction (old contract, modest amount, high trust) — but the address is on your personal blacklist, so rule 1134 alone forces a hard block.' },
+  { key: 'sce3', label: 'Sce 3', tag: 'DANGER', cls: 'sc-danger',
+    params: { amount: 1, age: 2, spender: 'contract', status: 'scam', trust: 'low', apiError: false },
+    note: 'Address matches Rabby\'s global scam database (rule 1029) — a single DANGER signal is enough to set the overall verdict to DANGER.' },
+  { key: 'sce4', label: 'Sce 4', tag: 'DANGER', cls: 'sc-danger',
+    params: { amount: 3, age: 1, spender: 'eoa', status: 'unknown', trust: 'zero', apiError: false },
+    note: 'Classic malicious-approval pattern: EOA spender (1022) requesting an unlimited amount (1039), on a brand-new, zero-trust contract (1024, 1150). Two DANGER + two WARNING hits collapse to overall DANGER.' },
+  { key: 'sce5', label: 'Sce 5', tag: 'WARNING', cls: 'sc-warning',
+    params: { amount: 2, age: 0, spender: 'contract', status: 'unknown', trust: 'zero', apiError: false },
+    note: 'No DANGER-level signals — but the contract is brand new (1024) and has $0 trust on DeBank (1150). Two WARNINGs, no worse — overall WARNING.' },
+  { key: 'sce6', label: 'Sce 6', tag: 'WARNING', cls: 'sc-warning',
+    params: { amount: 1, age: 1, spender: 'contract', status: 'unknown', trust: 'low', apiError: false },
+    note: 'Only one soft signal fires — the contract is just 2 days old (1024). Everything else looks normal, so the overall verdict stays at the lightest non-clean level, WARNING.' },
+  { key: 'sce7', label: 'Sce 7', tag: 'SAFE', cls: 'sc-safe',
+    params: { amount: 0, age: 3, spender: 'contract', status: 'white', trust: 'high', apiError: false },
+    note: 'Small approval, long-established contract, high DeBank trust, and — the deciding factor — the contract is on your personal whitelist (1133). Engine reports SAFE.' },
+  { key: 'sce8', label: 'Sce 8', tag: 'ERROR', cls: 'sc-error',
+    params: { amount: 0, age: 3, spender: 'contract', status: 'unknown', trust: 'zero', apiError: true },
+    note: 'The transaction itself looks unremarkable, but the DeBank trust-value API call times out mid-evaluation. The engine catches the exception and reports rule 1150 as ERROR rather than silently skipping it — "unknown", not "safe".' },
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let simState = { amount: 3, age: 0, spender: 'eoa', status: 'unknown', trust: 'zero', apiError: false };
+let activeScenario = null;
+let lastRules = [];
+
+// ── THEME ──────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.dataset.theme === 'dark';
+  html.dataset.theme = isDark ? 'light' : 'dark';
+  document.getElementById('theme-btn').textContent = isDark ? 'Dark Mode' : 'Light Mode';
+  setTimeout(renderRulesChart, 50);
+}
+
+// ── BUILD SCENARIO BUTTONS ─────────────────────────────────────────────────
+function buildScenarioButtons() {
+  const row = document.getElementById('scenario-row');
+  row.innerHTML = SCENARIOS.map(s => `
+    <button class="scenario-btn ${s.cls}" id="scbtn-${s.key}" onclick="loadScenario('${s.key}')">
+      <div class="sc-name">${s.label}</div>
+      <span class="sc-tag">${s.tag}</span>
+    </button>`).join('');
+}
+
+function loadScenario(key) {
+  const s = SCENARIOS.find(x => x.key === key);
+  if (!s) return;
+  activeScenario = s;
+  simState = Object.assign({}, s.params);
+
+  document.getElementById('sl-amount').value = simState.amount;
+  document.getElementById('sl-age').value = simState.age;
+  ['eoa','contract'].forEach(k => document.getElementById('btn-spender-' + k).classList.toggle('active', k === simState.spender));
+  ['unknown','scam','white','black'].forEach(k => document.getElementById('btn-status-' + k).classList.toggle('active', k === simState.status));
+  ['zero','low','high'].forEach(k => document.getElementById('btn-trust-' + k).classList.toggle('active', k === simState.trust));
+  document.getElementById('btn-api-ok').classList.toggle('active', !simState.apiError);
+  document.getElementById('btn-api-timeout').classList.toggle('active', simState.apiError);
+
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('scbtn-' + key).classList.add('active');
+  document.getElementById('active-scenario-tag').textContent = s.label + ' — ' + s.tag;
+
+  runEngine(s.note);
+}
+
+function onManualChange() {
+  activeScenario = null;
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('active-scenario-tag').textContent = 'Custom';
+  runEngine(null);
+}
+
+// ── PARAMETER TOGGLES ──────────────────────────────────────────────────────
+function setSpender(v) {
+  simState.spender = v;
+  ['eoa','contract'].forEach(k => document.getElementById('btn-spender-' + k).classList.toggle('active', k === v));
+  onManualChange();
+}
+function setStatus(v) {
+  simState.status = v;
+  ['unknown','scam','white','black'].forEach(k => document.getElementById('btn-status-' + k).classList.toggle('active', k === v));
+  onManualChange();
+}
+function setTrust(v) {
+  simState.trust = v;
+  ['zero','low','high'].forEach(k => document.getElementById('btn-trust-' + k).classList.toggle('active', k === v));
+  onManualChange();
+}
+function setApi(isError) {
+  simState.apiError = isError;
+  document.getElementById('btn-api-ok').classList.toggle('active', !isError);
+  document.getElementById('btn-api-timeout').classList.toggle('active', isError);
+  onManualChange();
+}
+
+// ── ENGINE SIMULATION ──────────────────────────────────────────────────────
+const amountLabels = ['Small', 'Medium', 'Large', 'Unlimited'];
+const ageLabels = ['Brand New (<1 day)', '2 days old', '1 week old', '1+ year old'];
+
+function runEngine(scenarioNote) {
+  simState.amount = parseInt(document.getElementById('sl-amount').value);
+  simState.age = parseInt(document.getElementById('sl-age').value);
+  document.getElementById('val-amount').textContent = amountLabels[simState.amount];
+  document.getElementById('val-age').textContent = ageLabels[simState.age];
+
+  const rules = [];
+
+  if (simState.spender === 'eoa') rules.push({ id: '1022', level: 'DANGER', desc: 'Spender is an EOA (wallet address), not a contract' });
+  if (simState.amount === 3) rules.push({ id: '1039', level: 'DANGER', desc: 'Infinite (unlimited) approval amount requested' });
+  if (simState.age === 0 || simState.age === 1) rules.push({ id: '1024', level: 'WARNING', desc: 'Contract deployed less than 3 days ago' });
+
+  if (simState.trust === 'zero') {
+    if (simState.apiError) rules.push({ id: '1150', level: 'ERROR', desc: 'DeBank trust-value lookup failed (API timeout) — engine could not evaluate this rule' });
+    else rules.push({ id: '1150', level: 'WARNING', desc: 'Spender contract has $0 trust value on DeBank — no users, no liquidity, no history' });
+  }
+
+  if (simState.status === 'scam') rules.push({ id: '1029', level: 'DANGER', desc: 'Address flagged in Rabby\'s global scam database' });
+  if (simState.status === 'black') rules.push({ id: '1134', level: 'FORBIDDEN', desc: 'Contract is on your personal blacklist — hard block, cannot be ignored' });
+  if (simState.status === 'white') rules.push({ id: '1133', level: 'SAFE', desc: 'Contract is on your personal whitelist' });
+
+  // Reduce to overall level — fixed priority FORBIDDEN > DANGER > WARNING > SAFE > ERROR
+  const priority = { FORBIDDEN: 5, DANGER: 4, WARNING: 3, SAFE: 2, ERROR: 1 };
+  let overall;
+  if (rules.length === 0) {
+    rules.push({ id: '—', level: 'SAFE', desc: 'No risk signals detected for this scenario' });
+    overall = 'SAFE';
+  } else {
+    overall = rules.reduce((a, b) => priority[a.level] >= priority[b.level] ? a : b).level;
+  }
+
+  const classMap = { FORBIDDEN: 'forbidden', DANGER: 'danger', WARNING: 'warning', SAFE: 'safe', ERROR: 'error' };
+  const colorMap = { FORBIDDEN: '#f87171', DANGER: '#f87171', WARNING: 'var(--amber)', SAFE: 'var(--green)', ERROR: 'var(--err)' };
+  const actionMap = {
+    FORBIDDEN: 'Sign button DISABLED. The only way to proceed is to permanently disable rule 1134 in Security Settings — "Ignore Alert" does nothing for FORBIDDEN.',
+    DANGER: 'Sign button stays active but strongly discouraged — each DANGER rule must be manually acknowledged ("Ignore Alert") before signing.',
+    WARNING: 'Sign button active. Warnings are easy to dismiss but worth reading — they often flag unusual, not necessarily malicious, behavior.',
+    SAFE: 'No blocking issues found. The strongest signal here is a positive one (e.g. your own whitelist) — transaction looks safe to proceed.',
+    ERROR: 'The engine could not finish evaluating one rule (its data lookup failed). Treat this as "unknown", not "safe" — consider retrying before signing.',
+  };
+
+  const resultEl = document.getElementById('sim-result');
+  resultEl.className = 'sim-result ' + (classMap[overall] || '');
+  document.getElementById('sim-overall-label').innerHTML = 'Overall: <span style="color:' + colorMap[overall] + '">' + overall + '</span>';
+  document.getElementById('sim-overall-desc').textContent = scenarioNote || actionMap[overall] || '';
+  document.getElementById('sim-action-label').textContent = rules.length + ' rule(s) evaluated and fired for this scenario. Verdict = highest-priority level among them.';
+
+  const rulesList = document.getElementById('sim-rules-list');
+  rulesList.innerHTML = rules.map(r => `
+    <div class="sim-rule-item">
+      <span class="rule-id">${r.id}</span>
+      <span class="badge badge-${r.level.toLowerCase()}">${r.level}</span>
+      <span style="font-size:13px;">${r.desc}</span>
+    </div>`).join('');
+
+  renderRulesChart(rules);
+}
+
+// ── RULE REFERENCE TABLE ───────────────────────────────────────────────────
+function buildRuleReference() {
+  const body = document.getElementById('rule-reference-body');
+  body.innerHTML = RULE_DEFS.map(r => `
+    <tr>
+      <td style="padding:9px 10px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:12px;">${r.id}</td>
+      <td style="padding:9px 10px;border-bottom:1px solid var(--border);"><span class="badge badge-${r.level.toLowerCase()}">${r.level}</span></td>
+      <td style="padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;"><strong>${r.desc}</strong><br/><span style="color:var(--text-muted);font-size:12px;">Fires when: ${r.cond}</span></td>
+    </tr>`).join('');
+}
+
+// ── CHART ──────────────────────────────────────────────────────────────────
+function getCssVar(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function renderRulesChart(rules) {
+  lastRules = rules || lastRules;
+  const canvas = document.getElementById('chart-rules');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.parentElement.clientWidth - 40;
+  const h = 140;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  const levels = ['FORBIDDEN','DANGER','WARNING','SAFE','ERROR'];
+  const colors = { FORBIDDEN:'#AF160E', DANGER:'#EC5151', WARNING:'#FFB020', SAFE:'#27C193', ERROR:'#B4BDCC' };
+  const counts = {};
+  levels.forEach(l => counts[l] = 0);
+  lastRules.forEach(r => { if (counts[r.level] !== undefined) counts[r.level]++; });
+
+  const barW = Math.min(60, (w - 80) / levels.length - 12);
+  const maxCount = Math.max(...Object.values(counts), 1);
+  const barAreaH = h - 40;
+  const startX = (w - levels.length * (barW + 12)) / 2;
+
+  const textColor = getCssVar('--text-muted');
+  const gridColor = getCssVar('--chart-grid');
+
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= maxCount; i++) {
+    const y = 10 + barAreaH - (i / maxCount) * barAreaH;
+    ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(w - 10, y); ctx.stroke();
+  }
+
+  levels.forEach((level, i) => {
+    const x = startX + i * (barW + 12);
+    const count = counts[level];
+    const barH = count > 0 ? Math.max(4, (count / maxCount) * barAreaH) : 0;
+    const y = 10 + barAreaH - barH;
+
+    if (count > 0) {
+      const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+      grad.addColorStop(0, colors[level]);
+      grad.addColorStop(1, colors[level] + '88');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0]);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = textColor;
+    ctx.font = '10px ' + getCssVar('--font-sans');
+    ctx.textAlign = 'center';
+    ctx.fillText(level === 'FORBIDDEN' ? 'FORBID' : level, x + barW / 2, h - 4);
+
+    if (count > 0) {
+      ctx.fillStyle = colors[level];
+      ctx.font = 'bold 12px ' + getCssVar('--font-sans');
+      ctx.fillText(count, x + barW / 2, y - 4);
+    }
+  });
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  buildScenarioButtons();
+  buildRuleReference();
+  loadScenario('sce1');
+});
+window.addEventListener('resize', () => renderRulesChart());
+</script>
+<script src="rabby_sidebar.js" defer></script>
+</body>
+</html>

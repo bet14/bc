@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rabby Wallet Fraud Detection - References</title>
+  <link rel="stylesheet" href="rabby_sidebar.css">
+  <style>
+    [data-theme="dark"] {
+      --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+      --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+      --accent: #6c8ef7; --accent2: #a78bfa;
+    }
+    [data-theme="light"] {
+      --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+      --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+      --accent: #4361ee; --accent2: #7c3aed;
+    }
+    #topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 18px; gap: 14px;
+    }
+    #topbar h1 { font-size: 16px; font-weight: 700; flex: 1; margin:0; background:none; -webkit-text-fill-color: var(--text); color: var(--text); }
+    #topbar h1 span { color: var(--accent); }
+    #theme-btn {
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+    }
+    #theme-btn:hover { background: var(--border); }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    #main {
+      max-width: 1100px;
+      margin: 84px auto 0;
+    }
+    .hero { text-align: center; margin-bottom: 14px; padding: 8px 20px 0; }
+    h1 {
+      font-size: 0.8rem; font-weight: 800; margin-bottom: 6px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1.2;
+    }
+    .subtitle { font-size: 1.05rem; color: var(--text-muted); max-width: 760px; margin: 0 auto; }
+    .section-title {
+      font-size: 1.4rem; font-weight: 700; color: var(--text);
+      margin: 40px 0 20px; padding-bottom: 12px; border-bottom: 2px solid var(--border);
+    }
+    .cite-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 24px 28px; margin-bottom: 18px; transition: all 0.25s ease;
+    }
+    .cite-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .cite-tag {
+      display: inline-block; padding: 4px 12px; border-radius: 14px; font-size: 0.72rem;
+      font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+      background: rgba(108, 142, 247, 0.15); color: var(--accent2); margin-bottom: 12px;
+    }
+    .cite-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 6px; line-height: 1.4; }
+    .cite-meta { font-size: 0.88rem; color: var(--accent); margin-bottom: 12px; font-style: italic; }
+    .cite-summary { font-size: 0.93rem; color: var(--text-muted); margin-bottom: 12px; }
+    .cite-link { font-size: 0.88rem; color: var(--accent); word-break: break-all; text-decoration: none; }
+    .cite-link:hover { color: var(--accent2); text-decoration: underline; }
+    .resources-list { list-style: none; padding: 0; }
+    .resources-list li {
+      padding: 10px 0 10px 26px; position: relative; color: var(--text-muted); font-size: 0.95rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .resources-list li::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+    .resources-list a { color: var(--accent); text-decoration: none; }
+    .resources-list a:hover { color: var(--accent2); text-decoration: underline; }
+    .disclosure {
+      background: rgba(108, 142, 247, 0.05); border-left: 4px solid var(--accent);
+      border-radius: 8px; padding: 22px 26px; margin: 40px 0;
+    }
+    .disclosure h3 { font-size: 1.05rem; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+    .disclosure ul { list-style: none; padding: 0; }
+    .disclosure li {
+      padding: 6px 0 6px 24px; position: relative; color: var(--text-muted); font-size: 0.93rem;
+    }
+    .disclosure li::before { content: '•'; position: absolute; left: 4px; color: var(--accent); font-weight: 700; }
+    .footer {
+      text-align: center; padding-top: 40px; margin-top: 20px; border-top: 1px solid var(--border);
+      color: var(--text-muted); font-size: 0.85rem;
+    }
+    @media (max-width: 768px) {
+      h1 { font-size: 1.8rem; }
+      .section-title { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <h1>Rabby Wallet — <span>References</span></h1>
+    <button id="theme-btn" onclick="toggleTheme()">Light mode</button>
+  </div>
+  <div id="main">
+    <div class="hero">
+      <h1>References &amp; Sources</h1>
+    </div>
+
+    <h2 class="section-title">Academic Papers</h2>
+
+    <div class="cite-card">
+      <span class="cite-tag">Cite 1</span>
+      <div class="cite-title">Hu, X., He, N., &amp; Wang, H. (2025). WalletProbe: A Testing Framework for Browser-based Cryptocurrency Wallet Extensions. <em>arXiv:2504.11735</em>.</div>
+      <div class="cite-meta">April 2025</div>
+      <p class="cite-summary">Presents a mutation-based testing framework that identified 13 attack vectors and 21 attack strategies across 39 browser-based wallets. Both MetaMask and Rabby accepted the researchers' responsible disclosure and adopted fixes. Evaluates transaction simulators, security alert modules, and wallet UI components.</p>
+      <a class="cite-link" href="https://arxiv.org/abs/2504.11735" target="_blank" rel="noopener">https://arxiv.org/abs/2504.11735</a>
+    </div>
+
+    <div class="cite-card">
+      <span class="cite-tag">Cite 2</span>
+      <div class="cite-title">Guan, S., &amp; Li, K. (2025). Ethereum Crypto Wallets under Address Poisoning: How Usable and Secure Are They? <em>arXiv:2508.12107</em>.</div>
+      <div class="cite-meta">August 2025</div>
+      <p class="cite-summary">Systematically evaluates 53 popular Ethereum wallets against address poisoning attacks. Finds that millions of users were targeted with losses exceeding $100M. Specifically notes Rabby's effectiveness in flagging poisoned transfers as scam transactions, distinguishing it from wallets that display fake transfers without warning.</p>
+      <a class="cite-link" href="https://arxiv.org/abs/2508.12107" target="_blank" rel="noopener">https://arxiv.org/abs/2508.12107</a>
+    </div>
+
+    <div class="cite-card">
+      <span class="cite-tag">Cite 3</span>
+      <div class="cite-title">Qin, Y., &amp; Duan, H. (2026). "What I Sign Is Not What I See": Towards Explainable and Trustworthy Cryptocurrency Wallet Signatures. <em>arXiv:2601.16751</em>.</div>
+      <div class="cite-meta">January 2026</div>
+      <p class="cite-summary">Investigates the usability-security gap in wallet signatures through formative studies. Reveals that users frequently misread critical parameters and underestimate high-risk signatures. References MetaMask and Rabby as wallets addressing this problem. Proposes a Signature Semantic Decoder framework for plain-language explanations of signing requests.</p>
+      <a class="cite-link" href="https://arxiv.org/abs/2601.16751" target="_blank" rel="noopener">https://arxiv.org/abs/2601.16751</a>
+    </div>
+
+    <div class="cite-card">
+      <span class="cite-tag">Cite 4</span>
+      <div class="cite-title">Wilczynski, A., &amp; Jasnosz, G. (2025). Security Assessment of Smart Contract Integration and Wallet Interaction in Decentralized Applications. <em>Applied Sciences, 15</em>(15), 8473.</div>
+      <div class="cite-meta">2025</div>
+      <p class="cite-summary">Provides a security assessment framework for dApp-wallet interactions. References Rabby and OKX Wallet as examples of wallets with advanced security interfaces. Discusses transaction simulation accuracy and security guarantees through fraud proofs in decentralized application contexts.</p>
+      <a class="cite-link" href="https://www.mdpi.com/2076-3417/15/15/8473" target="_blank" rel="noopener">https://www.mdpi.com/2076-3417/15/15/8473</a>
+    </div>
+
+    <div class="cite-card">
+      <span class="cite-tag">Cite 5</span>
+      <div class="cite-title">Soleti, M., Gangwal, A., &amp; Conti, M. (2025). Attacking Anonymity Set in Tornado Cash via Wallet Fingerprints. In <em>Proceedings of the 40th ACM/SIGAPP Symposium on Applied Computing</em>.</div>
+      <div class="cite-meta">2025</div>
+      <p class="cite-summary">Analyzes wallet fingerprinting techniques across multiple wallet extensions including Rabby Wallet. Demonstrates how wallet-specific behaviors can be identified, which has implications for both privacy and security research in the cryptocurrency ecosystem.</p>
+      <a class="cite-link" href="https://dl.acm.org/doi/abs/10.1145/3672608.3707896" target="_blank" rel="noopener">https://dl.acm.org/doi/abs/10.1145/3672608.3707896</a>
+    </div>
+
+    <h2 class="section-title">Additional Resources</h2>
+    <ul class="resources-list">
+      <li>Rabby Wallet Official Documentation: <a href="https://rabby.io" target="_blank" rel="noopener">https://rabby.io</a></li>
+      <li>Rabby GitHub Repository (Open Source): <a href="https://github.com/RabbyHub/Rabby" target="_blank" rel="noopener">https://github.com/RabbyHub/Rabby</a></li>
+      <li>DeBank Security Engine Documentation: <a href="https://docs.debank.com" target="_blank" rel="noopener">https://docs.debank.com</a></li>
+      <li>EIP-712 Typed Data Standard: <a href="https://eips.ethereum.org/EIPS/eip-712" target="_blank" rel="noopener">https://eips.ethereum.org/EIPS/eip-712</a></li>
+    </ul>
+
+    <div class="disclosure">
+      <h3>AI Disclosure</h3>
+      <ul>
+        <li>AI was used to explain and research the sources, and to summarize articles.</li>
+        <li>AI was used to produce the format and template of the slides.</li>
+        <li>AI was used to design demo scenarios and the wallet-as-requested mockups.</li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      <p>Research based on analysis of Rabby's open-source repository and recent academic papers on crypto wallet security</p>
+    </div>
+  </div>
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('theme-btn');
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = 'Dark mode';
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = 'Light mode';
+  }
+}
+</script>
+<script src="rabby_sidebar.js" defer></script>
+</body>
+</html>

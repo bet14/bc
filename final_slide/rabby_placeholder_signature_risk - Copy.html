@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rabby Wallet Fraud Detection - Signature Risk Explanations</title>
+  <link rel="stylesheet" href="rabby_sidebar.css">
+  <style>
+    [data-theme="dark"] {
+      --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+      --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+      --accent: #6c8ef7; --accent2: #a78bfa;
+    }
+    [data-theme="light"] {
+      --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+      --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+      --accent: #4361ee; --accent2: #7c3aed;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    #topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 18px; gap: 14px;
+    }
+    #topbar h1 { font-size: 16px; font-weight: 700; flex: 1; margin:0; background:none; -webkit-text-fill-color: var(--text); color: var(--text); }
+    #topbar h1 span { color: var(--accent); }
+    #theme-btn {
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+    }
+    #theme-btn:hover { background: var(--border); }
+    #main {
+      margin-top: 84px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero {
+      text-align: center;
+      margin-bottom: 60px;
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+    }
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 30px;
+      margin-top: 60px;
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+    .content-section {
+      margin-bottom: 60px;
+    }
+    /* Info Cards Grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .info-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+    .info-card:hover {
+      border-color: var(--accent);
+      background: var(--bg2);
+      transform: translateY(-4px);
+    }
+    .info-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .info-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    /* Flow Diagram */
+    .flow-diagram {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      margin: 40px 0;
+      text-align: center;
+    }
+    .flow-steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 30px 0;
+    }
+    .flow-node {
+      padding: 16px 24px;
+      background: var(--bg3);
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--accent2);
+      min-width: 160px;
+      text-align: center;
+    }
+    .flow-arrow {
+      font-size: 1.6rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    /* Threat Cards */
+    .threat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .threat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      border-left: 4px solid #ff6b6b;
+      transition: all 0.3s ease;
+    }
+    .threat-card:hover {
+      border-color: #ff6b6b;
+      transform: translateY(-4px);
+    }
+    .threat-icon {
+      font-size: 1.4rem;
+      margin-bottom: 12px;
+    }
+    .threat-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .threat-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    /* Example Scenarios */
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin: 40px 0;
+    }
+    .scenario-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .scenario-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+    }
+    .scenario-header {
+      background: var(--bg3);
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .scenario-header h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
+    }
+    .scenario-content {
+      padding: 24px;
+    }
+    .code-block {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-bottom: 16px;
+      overflow-x: auto;
+      word-break: break-all;
+    }
+    .scenario-content p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+    .result-badge {
+      display: inline-block;
+      padding: 8px 14px;
+      background: rgba(108, 142, 247, 0.15);
+      border: 1px solid rgba(108, 142, 247, 0.3);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    /* Benefits and Limitations */
+    .benefits-limits {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin: 40px 0;
+    }
+    .benefit-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      border-left: 4px solid #51cf66;
+    }
+    .benefit-box h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #51cf66;
+      margin-bottom: 16px;
+    }
+    .benefit-box ul {
+      list-style: none;
+      padding: 0;
+    }
+    .benefit-box li {
+      padding: 8px 0;
+      padding-left: 20px;
+      position: relative;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .benefit-box li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: #51cf66;
+      font-weight: 700;
+    }
+    .limitation-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      border-left: 4px solid #ffa94d;
+    }
+    .limitation-box h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffa94d;
+      margin-bottom: 16px;
+    }
+    .limitation-box ul {
+      list-style: none;
+      padding: 0;
+    }
+    .limitation-box li {
+      padding: 8px 0;
+      padding-left: 20px;
+      position: relative;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .limitation-box li::before {
+      content: '⚠';
+      position: absolute;
+      left: 0;
+      color: #ffa94d;
+      font-weight: 700;
+    }
+    /* Warning System */
+    .warning-list {
+      background: rgba(255, 107, 107, 0.1);
+      border-left: 4px solid #ff6b6b;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .warning-list h4 {
+      color: var(--text);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    .warning-list p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      padding-left: 20px;
+      position: relative;
+    }
+    .warning-list p::before {
+      content: '⚠️';
+      position: absolute;
+      left: 0;
+    }
+    /* Key Points */
+    .key-points {
+      background: rgba(108, 142, 247, 0.05);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 40px 0;
+    }
+    .key-points h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .key-points ul {
+      list-style: none;
+      padding: 0;
+    }
+    .key-points li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .key-points li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 80px;
+    }
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+      .section-title {
+        font-size: 1.4rem;
+      }
+      .flow-steps {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .flow-arrow {
+        transform: rotate(90deg);
+      }
+      .scenario-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <h1>Rabby Wallet — <span>Signature Risk Explanations</span></h1>
+    <button id="theme-btn" onclick="toggleTheme()">Light mode</button>
+  </div>
+
+  <div id="main">
+    <!-- Hero Section -->
+    <div class="hero">
+      <h1>Signature Risk Explanations</h1>
+      <p class="subtitle">How Rabby decodes raw signature requests (permit, permit2, typed data) into plain-language explanations of what is actually being authorized</p>
+    </div>
+
+    <!-- What is Signature Parsing -->
+    <div class="content-section">
+      <h2 class="section-title">What is Signature Parsing?</h2>
+      <div class="key-points">
+        <h3>Understanding Message Signing</h3>
+        <ul>
+          <li>In blockchain, users often sign messages before a transaction is executed</li>
+          <li>These messages are usually encoded in hexadecimal format and difficult for humans to understand</li>
+          <li>Signature Parsing converts complex blockchain data into a human-readable format</li>
+          <li>Rabby Wallet analyzes the message before the user signs it</li>
+        </ul>
+      </div>
+
+      <div class="info-grid" style="margin-top: 30px;">
+        <div class="info-card">
+          <h3>Purpose</h3>
+          <p>Signature parsing helps users understand what they are signing, detects suspicious requests, and prevents accidental authorization of malicious actions.</p>
+        </div>
+        <div class="info-card">
+          <h3>Critical Need</h3>
+          <p>Raw hexadecimal signatures are incomprehensible to non-technical users, making them vulnerable to phishing attacks and social engineering.</p>
+        </div>
+        <div class="info-card">
+          <h3>Risk Mitigation</h3>
+          <p>Clear, human-readable explanations empower users to make informed decisions about what permissions and actions they authorize.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- How Rabby Signature Parsing Works -->
+    <div class="content-section">
+      <h2 class="section-title">How Rabby Signature Parsing Works</h2>
+      <div class="flow-diagram">
+        <h3 style="color: var(--text); margin-bottom: 30px;">Processing Pipeline</h3>
+        <div class="flow-steps">
+          <div class="flow-node">DApp Request</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">Receive Signature Request</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">Parse Message Data</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">Human-Readable Explanation</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">User Reviews & Signs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rabby's Analysis -->
+    <div class="content-section">
+      <h2 class="section-title">Rabby's Analysis Capabilities</h2>
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>Function Detection</h3>
+          <p>Identifies the function being called in the signature request, revealing the operation's true intent.</p>
+        </div>
+        <div class="info-card">
+          <h3>Parameter Extraction</h3>
+          <p>Extracts transaction parameters from the encoded data, including amounts, addresses, and approvals.</p>
+        </div>
+        <div class="info-card">
+          <h3>Amount Display</h3>
+          <p>Displays token amounts in human-readable format with proper decimals and symbol recognition.</p>
+        </div>
+        <div class="info-card">
+          <h3>Recipient Verification</h3>
+          <p>Shows recipient addresses and cross-references them against known malicious address databases.</p>
+        </div>
+        <div class="info-card">
+          <h3>Permission Highlights</h3>
+          <p>Flags unusual permissions, including unlimited approvals and suspicious delegation requests.</p>
+        </div>
+        <div class="info-card">
+          <h3>Contract Intelligence</h3>
+          <p>Analyzes contract source code and behavior patterns to detect potentially dangerous operations.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example of Signature Parsing -->
+    <div class="content-section">
+      <h2 class="section-title">Example of Signature Parsing</h2>
+      <p style="text-align: center; color: var(--text-muted); margin-bottom: 40px;">Two real-world scenarios showing the difference between raw signatures and Rabby's parsed explanations</p>
+
+      <div class="scenario-grid">
+        <!-- Scenario 1: Without Signature Parsing -->
+        <div class="scenario-card">
+          <div class="scenario-header">
+            <h3>❌ Without Signature Parsing</h3>
+          </div>
+          <div class="scenario-content">
+            <p><strong>What the user sees:</strong></p>
+            <div class="code-block">0xa9059cbb000000000000000000000000<br>1234567890abcdef1234567890ab<br>cdef000000000000000000000064</div>
+            <p style="margin-top: 16px;"><strong>User's understanding:</strong></p>
+            <p>User cannot understand the request. Risk of authorizing unknown actions.</p>
+            <p style="margin-top: 16px;"><strong>Outcome:</strong> High risk of accidental signature. Vulnerable to phishing attacks.</p>
+            <div class="result-badge" style="background: rgba(255, 107, 107, 0.15); border-color: rgba(255, 107, 107, 0.3); color: #ff6b6b; margin-top: 16px;">High Risk</div>
+          </div>
+        </div>
+
+        <!-- Scenario 2: With Rabby Signature Parsing -->
+        <div class="scenario-card">
+          <div class="scenario-header">
+            <h3>✓ With Rabby Signature Parsing</h3>
+          </div>
+          <div class="scenario-content">
+            <p><strong>What the user sees:</strong></p>
+            <div class="code-block">Transfer 100 USDT<br>To: 0x1234...abcd<br>Network: Ethereum</div>
+            <p style="margin-top: 16px;"><strong>User's understanding:</strong></p>
+            <p>Clear understanding of the action being authorized. Can verify the recipient address.</p>
+            <p style="margin-top: 16px;"><strong>Outcome:</strong> User makes informed decision. Signature is intentional and verified.</p>
+            <div class="result-badge" style="background: rgba(81, 207, 102, 0.15); border-color: rgba(81, 207, 102, 0.3); color: #51cf66; margin-top: 16px;">Verified & Safe</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threats Detected -->
+    <div class="content-section">
+      <h2 class="section-title">Threats Detected by Signature Parsing</h2>
+
+      <div class="threat-grid">
+        <div class="threat-card">
+          <div class="threat-icon">🔓</div>
+          <h3>Hidden Token Transfers</h3>
+          <p>Malicious DApps may hide transfer requests within complex function calls. Rabby extracts and displays these transfers clearly.</p>
+        </div>
+
+        <div class="threat-card">
+          <div class="threat-icon">∞</div>
+          <h3>Unlimited Token Approvals</h3>
+          <p>Attackers request permission to spend all user tokens. Rabby highlights unlimited approvals and suggests safer alternatives.</p>
+        </div>
+
+        <div class="threat-card">
+          <div class="threat-icon">⚙️</div>
+          <h3>Fake Contract Interactions</h3>
+          <p>Unknown smart contracts may request dangerous actions. Rabby analyzes contract code and flags suspicious behavior patterns.</p>
+        </div>
+
+        <div class="threat-card">
+          <div class="threat-icon">🎣</div>
+          <h3>Phishing Signatures</h3>
+          <p>Users are tricked into signing messages that authorize asset theft. Rabby's clear formatting makes phishing attempts obvious.</p>
+        </div>
+
+        <div class="threat-card">
+          <div class="threat-icon">👤</div>
+          <h3>Address Spoofing</h3>
+          <p>Attackers use lookalike addresses or typosquatting. Rabby compares addresses against known legitimate contracts.</p>
+        </div>
+
+        <div class="threat-card">
+          <div class="threat-icon">🚨</div>
+          <h3>Unusual Permissions</h3>
+          <p>Requests for excessive permissions beyond the operation's scope. Rabby flags permission levels that exceed normal usage patterns.</p>
+        </div>
+      </div>
+
+      <div class="warning-list">
+        <h4>Rabby's Warning System</h4>
+        <p>Suspicious contract detected</p>
+        <p>Unlimited approval requested</p>
+        <p>Unknown destination address</p>
+        <p>Contract not verified on blockchain explorer</p>
+        <p>Recipient address flagged as risky</p>
+      </div>
+    </div>
+
+    <!-- Benefits and Limitations -->
+    <div class="content-section">
+      <h2 class="section-title">Benefits and Limitations</h2>
+
+      <div class="benefits-limits">
+        <div class="benefit-box">
+          <h3>Benefits</h3>
+          <ul>
+            <li>Improves transaction transparency</li>
+            <li>Reduces user mistakes and accidents</li>
+            <li>Detects suspicious requests proactively</li>
+            <li>Enhances wallet security posture</li>
+            <li>Helps prevent phishing attacks</li>
+            <li>Empowers informed user decisions</li>
+            <li>Supports non-technical users</li>
+          </ul>
+        </div>
+
+        <div class="limitation-box">
+          <h3>Limitations</h3>
+          <ul>
+            <li>Cannot guarantee complete protection</li>
+            <li>New attack methods may bypass detection</li>
+            <li>Users must review warnings carefully</li>
+            <li>Depends on contract ABI availability</li>
+            <li>May miss obfuscated or novel attacks</li>
+            <li>Requires user action to prevent signing</li>
+            <li>Limited to decoded, recognized signatures</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="key-points">
+        <h3>Key Takeaway</h3>
+        <ul>
+          <li>Signature parsing is a critical defense against signature-based attacks and phishing</li>
+          <li>Clear, human-readable explanations are essential for security in decentralized applications</li>
+          <li>Users remain the final gatekeepers—tools like Rabby provide visibility, but user judgment is irreplaceable</li>
+          <li>Continuous improvement in detection algorithms is necessary as attackers evolve their tactics</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Signature parsing is one of Rabby Wallet's core fraud detection features, protecting users from unauthorized and malicious signature requests</p>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const btn = document.getElementById('theme-btn');
+      if (html.getAttribute('data-theme') === 'dark') {
+        html.setAttribute('data-theme', 'light');
+        btn.textContent = 'Dark mode';
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        btn.textContent = 'Light mode';
+      }
+    }
+  </script>
+  <script src="rabby_sidebar.js" defer></script>
+</body>
+</html>

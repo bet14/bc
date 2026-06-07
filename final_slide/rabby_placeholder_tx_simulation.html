@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rabby Wallet — Pre-Sign Transaction Simulation</title>
+<link rel="stylesheet" href="rabby_sidebar.css">
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+  --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+  --accent: #6c8ef7; --accent2: #a78bfa; --green: #34d399;
+  --amber: #fbbf24; --red: #f87171;
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
+}
+[data-theme="light"] {
+  --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+  --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+  --accent: #4361ee; --accent2: #7c3aed; --green: #059669;
+  --amber: #d97706; --red: #dc2626;
+  --forbidden: #AF160E; --danger: #EC5151; --warning: #FFB020; --safe: #27C193; --err: #B4BDCC;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.65; }
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 18px; gap: 14px;
+}
+#topbar h1 { font-size: 16px; font-weight: 700; flex: 1; }
+#topbar h1 span { color: var(--accent); }
+#theme-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+  transition: background var(--transition);
+}
+#theme-btn:hover { background: var(--border); }
+#main { margin-top: 84px; padding: 0 40px 80px; max-width: 1180px; margin-left: auto; margin-right: auto; }
+h1 {
+  font-size: 30px; margin: 0 0 6px; letter-spacing: .2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+h2 { font-size: 22px; font-weight: 700; margin: 0 0 6px; color: var(--text); }
+h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; color: var(--accent); }
+.kicker { color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+.subtitle { color: var(--text-muted); font-size: 15px; margin: 0 0 22px; max-width: 820px; }
+.slide {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 32px 36px; margin-bottom: 28px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+.card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
+.card-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.card-row .card { flex: 1; min-width: 280px; }
+.callout { border-left: 3px solid var(--accent); background: var(--bg3); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 18px; }
+.callout-title { font-weight: 700; margin-bottom: 4px; font-size: 14px; }
+.note {
+  margin-top: 14px; padding: 12px 16px; border-left: 3px solid var(--accent);
+  background: var(--bg3); border-radius: var(--radius); color: var(--text-muted);
+  font-size: 13px; line-height: 1.6;
+}
+.note b { color: var(--text); }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin: 2px 4px 2px 0;
+}
+.b-safe { background: rgba(39,193,147,.15); color: var(--safe); border: 1px solid rgba(39,193,147,.4); }
+.b-warn { background: rgba(255,176,32,.15); color: var(--warning); border: 1px solid rgba(255,176,32,.4); }
+.b-danger { background: rgba(236,81,81,.15); color: var(--danger); border: 1px solid rgba(236,81,81,.4); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+th {
+  text-align: left; padding: 9px 12px; background: var(--bg2); color: var(--text-muted);
+  font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1px solid var(--border); font-weight: 600;
+}
+td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+td.id { color: var(--accent); font-weight: 700; font-family: var(--font-mono); white-space: nowrap; }
+.module-tag {
+  display: inline-block; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 2px 8px; margin: 2px 4px 2px 0; font-size: 12px;
+  color: var(--text-muted); font-family: var(--font-mono);
+}
+.footer-tag { color: var(--text-muted); font-size: 12px; text-align: center; margin-top: 8px; }
+.pipeline { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
+.pnode {
+  flex: 1; min-width: 160px; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 14px; font-size: 12.5px; color: var(--text);
+}
+.pnode b { display: block; font-size: 14px; margin-bottom: 5px; color: var(--accent); }
+.pnode span { display: block; color: var(--text-muted); font-size: 11.5px; line-height: 1.55; margin-top: 3px; }
+.arrow { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 20px; min-width: 22px; }
+ul.feature-list { margin: 8px 0 0; padding-left: 18px; color: var(--text-muted); font-size: 13.5px; line-height: 1.65; }
+ul.feature-list li { margin-bottom: 6px; }
+ul.feature-list b { color: var(--text); }
+.diff-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; font-size: 13.5px; }
+.diff-row .amt { font-family: var(--font-mono); font-weight: 700; }
+.amt.out { color: var(--red); }
+.amt.in { color: var(--green); }
+.scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 880px){ .grid3, .scenario-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>Rabby Wallet — <span>Pre-Sign Transaction Simulation</span></h1>
+  <button id="theme-btn" onclick="toggleTheme()">Light mode</button>
+</div>
+
+<div id="main">
+  <div class="kicker">Fraud Detection Features</div>
+  <h1>Pre-Sign Transaction Simulation</h1>
+  <p class="subtitle">Before a holder approves any transaction, Rabby forks the current chain state, runs the transaction against it, and shows the predicted outcome — what assets move, what the call actually does, and what it will cost — so the decision to sign is based on a forecast of the result, not just the raw calldata.</p>
+
+  <!-- SECTION 1: Pipeline -->
+  <div class="slide">
+    <h2>1. How the simulation pipeline works</h2>
+    <p class="subtitle" style="margin-bottom:14px;">When the signing screen mounts, Rabby fires two backend calls in parallel: <span class="module-tag">parseTx</span> ("parse this transaction into a readable action") to decode the action for display, and <span class="module-tag">preExecTx</span> ("pre-execute this transaction") to actually run it against forked chain state.</p>
+    <div class="card-row">
+      <div class="card" style="flex-basis:100%;">
+        <div class="pipeline">
+          <div class="pnode"><b>Build the call</b>Assemble the transaction object — to, data, value, a mock nonce/gas if the dApp omitted them — plus context: origin, sender, pending nonces, whether it's a Safe/Gnosis delegate call.<span>SignTx — buildTx / getPendingTxs</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Fork &amp; execute</b>The backend forks the chain at its current state and actually runs the transaction against that fork — not a static analysis of the calldata, but a real execution.<span>wallet.openapi.preExecTx</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Diff the state</b>Compares pre- and post-execution balances to produce a balance-change object — the code's name for it is <span class="module-tag" style="margin:2px 0;">balance_change</span> ("how the wallet's holdings changed"): tokens and NFTs sent vs. received, plus the net USD delta.<span>res.balance_change</span></div>
+          <div class="arrow">→</div>
+          <div class="pnode"><b>Render the forecast</b>The diff, gas estimate, decoded action and pass/fail status are stored on screen state and drawn before the Sign button is enabled.<span>setTxDetail · BalanceChange · GasSelector</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="callout-title">Why a fork-and-execute model matters</div>
+      Static calldata decoding can show <i>what function is being called</i>, but not <i>what actually happens</i> — a malicious contract can decode innocuously while reverting, draining an unrelated token, or transferring an NFT through an internal path the calldata never names. Running the call against a live forked state captures the real, end-to-end effect.
+    </div>
+    <div class="module-tag">SignTx.tsx — explainTx flow <span style="color:var(--text-muted);">(the screen component that runs this whole forecast)</span></div>
+    <div class="module-tag">wallet.openapi.preExecTx <span style="color:var(--text-muted);">("ask the backend to pre-run this transaction")</span></div>
+    <div class="module-tag">wallet.openapi.parseTx <span style="color:var(--text-muted);">("ask the backend to decode this transaction")</span></div>
+    <div class="module-tag">res.pre_exec.success / res.balance_change / res.gas <span style="color:var(--text-muted);">(did it run cleanly? / what moved? / what will it cost?)</span></div>
+  </div>
+
+  <!-- SECTION 2: three pillars -->
+  <div class="slide">
+    <h2>2. The three things the forecast covers</h2>
+    <p class="subtitle" style="margin-bottom:14px;">The simulation result — a structured object the code calls <span class="module-tag">ExplainTxResponse</span> ("the simulated explanation of this transaction") — is rendered as three complementary views on the same signing screen.</p>
+    <div class="grid3">
+      <div class="card">
+        <h3>Asset changes preview</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;">Lists every token and NFT the forked execution moved in or out of the wallet, each with a signed amount and a USD value, plus a net figure the code calls <span class="module-tag" style="margin:4px 0 0;">usd_value_change</span> ("net dollar value gained or lost").</p>
+        <ul class="feature-list">
+          <li><b>send_token_list / receive_token_list</b> — fungible token deltas</li>
+          <li><b>send_nft_list / receive_nft_list</b> — NFT transfers, by collection and token id</li>
+          <li><b>BalanceChange.tsx</b> renders the +/− rows and colors losses red, gains green</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Gas estimation</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;">The forked run returns real "how much gas it actually burned" and "how much it's allowed to burn" figures — <span class="module-tag" style="margin:4px 0 0;">gas_used</span> / <span class="module-tag" style="margin:0 0 4px;">gas_limit</span> in the code — which feed the recommended-gas calculation shown to the holder before they confirm — rather than relying on the dApp's own (sometimes wrong, sometimes manipulated) estimate.</p>
+        <ul class="feature-list">
+          <li><b>res.gas.gas_used / gas_limit</b> from the simulated run</li>
+          <li><b>wallet.getRecommendGas</b> turns that into a suggested gas limit</li>
+          <li><b>GasSelector</b> surfaces the estimate and lets the holder adjust it</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Contract interaction details</h3>
+        <p style="color:var(--text-muted);font-size:13.5px;">In parallel, <span class="module-tag" style="margin:4px 0 0;">parseTx</span> ("turn raw calldata into a labeled action") decodes the call into a structured, human-readable action (swap, approval, transfer, contract call, multi-action…) with the contract identity and parameters laid out instead of raw hex.</p>
+        <ul class="feature-list">
+          <li><b>action.type / action.data</b> — the decoded, typed action</li>
+          <li><b>parseAction / fetchActionRequiredData</b> — turns it into display-ready fields</li>
+          <li><b>contract_call</b> — code's name for "which contract this call actually resolves to," with its identity attached</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: layers + verification -->
+  <div class="slide">
+    <h2>3. Where this sits in the detection stack</h2>
+    <p class="subtitle" style="margin-bottom:14px;">This feature is the on-screen face of two layers working together — and it is worth being precise about which mechanism does what, since some draft notes describe a numbered "Layer 4 / 40xx" rule range that does not exist in the current rule engine source.</p>
+    <table>
+      <colgroup><col style="width:18%"><col style="width:82%"></colgroup>
+      <tr><th>Layer</th><th>Role in this feature</th></tr>
+      <tr><td class="id">Layer 1 — Data</td><td>Backend OpenAPI endpoints <span class="module-tag">preExecTx</span> (forks chain state and executes the transaction, returning <span class="module-tag">balance_change</span>, <span class="module-tag">gas</span>, <span class="module-tag">pre_exec.success</span>) and <span class="module-tag">parseTx</span> (decodes the call into a structured action). This is where the actual simulation happens — the client only renders the result.</td></tr>
+      <tr><td class="id">Layer 2 — Decode/Display</td><td>the screen and helper code — <span class="module-tag">SignTx.tsx</span> ("the signing-screen container"), <span class="module-tag">BalanceChange.tsx</span> ("the asset-diff display"), <span class="module-tag">useBalanceChange</span> ("the helper that shapes that diff for display"), <span class="module-tag">GasSelector</span> ("the gas-estimate display") and the action-parsing pipeline (<span class="module-tag">parseAction</span> "turn a decoded action into display fields", <span class="module-tag">fetchActionRequiredData</span> "fetch any extra context that action needs") — turn the raw simulation payload into the asset-change rows, gas figures, and decoded-action cards a holder actually reads before signing.</td></tr>
+      <tr><td class="id">Layer 3 — Rule engine</td><td>The numbered client-side rules that exist today (in <span class="module-tag">rabby-security-engine/src/rules</span>) sit in the <b>1000-series</b> — e.g. <span class="module-tag">1016</span>/<span class="module-tag">1019</span>/<span class="module-tag">1020</span> for send-target checks, <span class="module-tag">1022</span>/<span class="module-tag">1024</span>/<span class="module-tag">1029</span>/<span class="module-tag">1150</span> for approval-spender checks, plus action-specific groups for swaps, NFTs, permits and bridges. There is no separate 4000-series "transaction simulation" rule group in the current source — anomaly detection for this feature is carried by the <span class="module-tag">pre_exec.success</span> flag and the balance-change diff itself, not by a dedicated rule id range.</td></tr>
+    </table>
+    <div class="note"><b>Verification note:</b> a search of <span class="module-tag">rabby-security-engine/src/rules/*.ts</span> turns up rule ids only in the 1000–1154 range (all <span class="module-tag">id: "1xxx"</span>). The "Layer 1 preExecTx + Layer 3/4 rules (40xx)" framing seen in earlier outline drafts appears to be a planning placeholder rather than a confirmed code reference — this slide instead documents what <span class="module-tag">preExecTx</span> / <span class="module-tag">balance_change</span> / <span class="module-tag">pre_exec.success</span> concretely do.</div>
+  </div>
+
+  <!-- SECTION 4: scenario diagram -->
+  <div class="slide">
+    <h2>4. Scenario walkthrough — a draining-contract interaction</h2>
+    <p class="subtitle" style="margin-bottom:14px;">A holder clicks "claim rewards" on a malicious site. The calldata looks like an ordinary contract call; the simulation reveals what it actually does.</p>
+    <div class="scenario-grid">
+      <div class="card">
+        <h3>What the simulation forks &amp; runs</h3>
+        <div class="pipeline" style="flex-direction:column;">
+          <div class="pnode"><b>1. Build call</b>to: 0xabc…(unverified contract), data: claimRewards(), value: 0<span>Looks like a routine claim from the calldata alone</span></div>
+          <div class="arrow" style="min-height:14px;">↓</div>
+          <div class="pnode"><b>2. Fork current state</b>preExecTx forks mainnet at the latest block for this address</div>
+          <div class="arrow" style="min-height:14px;">↓</div>
+          <div class="pnode"><b>3. Execute against fork</b>The call internally invokes transferFrom on the holder's USDC and an NFT contract — actions never named in the calldata</div>
+          <div class="arrow" style="min-height:14px;">↓</div>
+          <div class="pnode"><b>4. Diff balances</b>Pre vs. post state comparison produces the balance_change payload below</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>What the holder sees, before signing</h3>
+        <div class="diff-row"><span>USDC</span><span class="amt out">− 1,000 USDC <span style="color:var(--text-muted);font-weight:400;">(≈ −$1,000)</span></span></div>
+        <div class="diff-row"><span>Bored Ape #1234</span><span class="amt out">NFT leaving wallet</span></div>
+        <div class="diff-row"><span>ETH</span><span class="amt in">+ 0.5 ETH <span style="color:var(--text-muted);font-weight:400;">(≈ +$1,750)</span></span></div>
+        <div class="diff-row"><span>Net change</span><span class="amt out">− $—  <span class="badge b-danger" style="margin-left:6px;">large outflow</span></span></div>
+        <div class="diff-row"><span>Gas estimate</span><span class="amt"><span class="badge b-warn">unusually high</span> vs. similar calls</span></div>
+        <div class="diff-row"><span>Decoded action</span><span style="color:var(--text-muted);font-size:12.5px;">"Contract call" → internally routes to transferFrom on two unrelated assets</span></div>
+        <div class="note" style="margin-top:10px;"><b>What this enables:</b> the holder can see — in plain numbers, before any signature is produced — that "claim rewards" actually means "send out $1,000 of USDC and an NFT for 0.5 ETH," and can decline. None of this is visible from the raw calldata or a generic "you are interacting with contract 0xabc…" warning.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: what it catches -->
+  <div class="slide">
+    <h2>5. What the simulation catches — and its limits</h2>
+    <div class="card-row">
+      <div class="card">
+        <h3>Detects</h3>
+        <ul class="feature-list">
+          <li><b>Unexpected asset loss</b> — any token or NFT leaving the wallet that the calldata's surface description didn't suggest, surfaced as a red row with a USD figure</li>
+          <li><b>Contract reverts / failed execution</b> — a flag the code calls <span class="module-tag">pre_exec.success</span> ("did the simulated run finish without failing?") turning false blocks the default "sign" affordance — the code's guard reads <span class="module-tag">checkErrors.length &gt; 0 || !pre_exec.success</span> ("if there are validation errors, or the simulated run failed, don't let the holder sign yet"), checked at every confirm step</li>
+          <li><b>Gas anomalies</b> — gas figures come from the actual forked execution (<span class="module-tag">gas_used</span> / <span class="module-tag">gas_limit</span>) rather than the dApp's claim, so abnormally expensive calls are visible before signing</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Limits to keep in mind</h3>
+        <ul class="feature-list">
+          <li>The fork reflects state <i>at simulation time</i> — a contract can behave differently once the real transaction lands a few blocks later (time-of-check / time-of-use gap)</li>
+          <li>Simulation depends on the backend OpenAPI service being reachable and the chain being supported; a flag the code calls <span class="module-tag">support_balance_change</span> ("can this chain even produce an asset-diff?") and related fallbacks exist for chains where it cannot</li>
+          <li>It forecasts the <i>direct</i> effect of this one transaction — it does not by itself evaluate follow-on risk from a granted approval being used later (that is the role of Approval Risk Alerts)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-tag">Source: SignTx.tsx explain/simulation flow, TxComponents/BalanceChange &amp; GasSelector, useBalanceChange, rabby-security-engine/src/rules (verified rule-id range)</div>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('theme-btn');
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = 'Dark mode';
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = 'Light mode';
+  }
+}
+</script>
+<script src="rabby_sidebar.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "chainshield-fraud-detection-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --open /react.html",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "@mui/icons-material": "^6.3.1",
+    "@mui/material": "^6.3.1",
+    "chart.js": "^4.4.7",
+    "ethers": "^6.13.5",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.0.7",
+    "web3": "^4.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {}
+}

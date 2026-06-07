@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rabby Wallet Fraud Detection - Overview</title>
+  <link rel="stylesheet" href="rabby_sidebar.css">
+  <style>
+    [data-theme="dark"] {
+      --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
+      --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
+      --accent: #6c8ef7; --accent2: #a78bfa;
+    }
+    [data-theme="light"] {
+      --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+      --border: #d0d5e8; --text: #1a1f36; --text-muted: #6b7280;
+      --accent: #4361ee; --accent2: #7c3aed;
+    }
+    #topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 18px; gap: 14px;
+    }
+    #topbar h1 { font-size: 16px; font-weight: 700; flex: 1; margin:0; background:none; -webkit-text-fill-color: var(--text); color: var(--text); }
+    #topbar h1 span { color: var(--accent); }
+    #theme-btn {
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+    }
+    #theme-btn:hover { background: var(--border); }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 84px auto 0;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 40px 20px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(108, 142, 247, 0.15);
+      border: 1px solid rgba(108, 142, 247, 0.3);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--accent2);
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin: 0 auto 5px;
+    }
+
+    /* Info Section */
+    .info-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .info-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+      border-color: var(--accent);
+      background: var(--bg2);
+    }
+
+    .info-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .info-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Main Content Section */
+    .content-section {
+      margin-bottom: 60px;
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 30px;
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* Outline Cards Grid */
+    .outline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .outline-card {
+      background: var(--bg2);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .outline-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+      transform-origin: left;
+    }
+
+    .outline-card:hover {
+      border-color: var(--accent);
+      background: var(--bg2);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(108, 142, 247, 0.15);
+    }
+
+    .outline-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .card-number {
+      display: inline-block;
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: var(--text);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 16px;
+    }
+
+    .outline-card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .outline-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* How It Works Section */
+    .flow-section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      margin: 40px 0;
+      text-align: center;
+    }
+
+    .flow-section h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    .flow-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 24px 0;
+    }
+
+    .flow-node {
+      padding: 12px 20px;
+      background: var(--bg3);
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent2);
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .flow-arrow {
+      font-size: 1.4rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Key Points Section */
+    .key-points {
+      background: rgba(108, 142, 247, 0.05);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 40px 0;
+    }
+
+    .key-points h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .key-points ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .key-points li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .key-points li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .footer a:hover {
+      color: var(--accent2);
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .section-title {
+        font-size: 1.4rem;
+      }
+
+      .outline-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-diagram {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .flow-arrow {
+        transform: rotate(90deg);
+      }
+
+      .info-section {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <h1>Rabby Wallet — <span>Fraud Detection Overview</span></h1>
+    <button id="theme-btn" onclick="toggleTheme()">Light mode</button>
+  </div>
+  <div class="container" id="main">
+    <!-- Hero Section -->
+    <div class="hero">
+      
+      <h1>How do fraud detection features of Rabby Wallet protect users?</h1>
+      <p class="subtitle">Understanding how Rabby's pre-transaction security analysis prevents phishing, scams, and malicious transactions</p>
+    </div>
+
+    <!-- Introduction Cards -->
+    <div class="info-section">
+      <div class="info-card">
+        <h3>Rabby Wallet</h3>
+        <p>An open-source browser wallet with built-in pre-sign fraud detection to help users avoid phishing, scams, and malicious transactions.</p>
+      </div>
+
+      <div class="info-card">
+        <h3>Why it matters</h3>
+        <p>Blockchain transactions are irreversible, so Rabby warns users before signing anything dangerous.</p>
+      </div>
+
+      <div class="info-card">
+        <h3>What Rabby offers</h3>
+        <p>Multi-chain functionality, transaction transparency, a high level of security, token swapping with gas top-up, and compatibility with many other wallets and platforms.</p>
+      </div>
+
+    </div>
+
+    <!-- Main Content Section -->
+    <div class="content-section">
+      <h2 class="section-title">Presentation Outline</h2>
+
+      <!-- Outline Cards -->
+      <div class="outline-grid">
+        <!-- Card 1 -->
+        <div class="outline-card" onclick="window.location.href='5-layer-detection-with-demo-2.html'">
+          <div class="card-number">1</div>
+          <h3>How It Works</h3>
+          <p>Understand the 5-layer detection architecture and rule engine that powers Rabby's fraud detection in real-time.</p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="outline-card" onclick="window.location.href='rabby_placeholder_tx_simulation.html'">
+          <div class="card-number">2</div>
+          <h3>Core Features</h3>
+          <p>Transaction simulation, phishing detection, approval alerts, address poisoning filtering, and signature parsing explained.</p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="outline-card" onclick="window.location.href='rabby_placeholder_wallet_comparison.html'">
+          <div class="card-number">3</div>
+          <h3>Wallet Comparison</h3>
+          <p>How Rabby's fraud detection compares to MetaMask, Phantom, Trust Wallet, and other popular cryptocurrency wallets.</p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="outline-card" onclick="window.location.href='rabby_placeholder_proof_of_concept.html'">
+          <div class="card-number">4</div>
+          <h3>Proof of Concept</h3>
+          <p>A simplified wallet implementation demonstrating the core principles and lessons learned from studying Rabby's source code.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Research based on analysis of Rabby's open-source repository and recent academic papers on crypto wallet security</p>
+    </div>
+  </div>
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('theme-btn');
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = 'Dark mode';
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = 'Light mode';
+  }
+}
+</script>
+<script src="rabby_sidebar.js" defer></script>
+</body>
+</html>

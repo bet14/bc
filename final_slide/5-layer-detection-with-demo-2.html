@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rabby 5-Layer Detection Pipeline — Onboarding Guide</title>
+<link rel="stylesheet" href="rabby_sidebar.css">
+<style>
+  [data-theme="dark"]{
+    --bg:#0f1117; --panel:#181b24; --panel2:#1e2130;
+    --bg2: var(--panel); --bg3: var(--panel2); --text-muted: var(--muted);
+    --accent:#6c8ef7; --accent2:#a78bfa;
+    --safe:#27C193; --warning:#FFB020; --danger:#EC5151; --forbidden:#AF160E;
+    --text:#e2e8f0; --muted:#8892a4; --border:#2a2d3e;
+  }
+  [data-theme="light"]{
+    --bg:#f0f2f8; --panel:#ffffff; --panel2:#e8ecf4;
+    --bg2: var(--panel); --bg3: var(--panel2); --text-muted: var(--muted);
+    --accent:#4361ee; --accent2:#7c3aed;
+    --safe:#059669; --warning:#d97706; --danger:#dc2626; --forbidden:#AF160E;
+    --text:#1a1f36; --muted:#6b7280; --border:#d0d5e8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 18px; gap: 14px;
+  }
+  #topbar h1 { font-size: 16px; font-weight: 700; flex: 1; margin:0; background:none; -webkit-text-fill-color:var(--text); color: var(--text); }
+  #topbar h1 span { color: var(--accent); }
+  #theme-btn {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+  }
+  #theme-btn:hover { background: var(--border); }
+  .deck{ max-width:1400px; margin:0 auto; padding:84px 24px 80px; }
+
+  /* === HEADER === */
+  header{ margin-bottom:32px; text-align:center; }
+  header .kicker{ color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1.5px; }
+  header h1{
+    font-size:32px; margin:8px 0 12px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    font-weight:800;
+  }
+  header p{ color:var(--muted); font-size:15px; max-width:900px; line-height:1.7; margin:0 auto; }
+
+  /* === ARCHITECTURE DIAGRAM === */
+  .architecture{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:32px; margin-bottom:36px; box-shadow:0 10px 40px rgba(0,0,0,.35);
+  }
+  .architecture h2{ font-size:18px; margin:0 0 20px; color:var(--text); }
+  .arch-flow{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:20px;
+  }
+  .flow-node{
+    flex:0 0 auto; background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+    padding:12px 16px; font-size:12.5px; color:var(--text); font-weight:600;
+    text-align:center; min-width:140px; position:relative;
+  }
+  .flow-node.trigger{
+    background:linear-gradient(135deg, rgba(255,200,0,.25), rgba(255,138,76,.25));
+    border:2px solid var(--danger);
+    color:var(--danger);
+    font-weight:800;
+    box-shadow:0 0 20px rgba(255,138,76,.3);
+  }
+  .flow-node.l1{ background:rgba(124,158,255,.15); border-color:rgba(124,158,255,.4); }
+  .flow-node.l2{ background:rgba(155,124,255,.15); border-color:rgba(155,124,255,.4); }
+  .flow-node.l3{ background:rgba(255,138,76,.15); border-color:rgba(255,138,76,.4); }
+  .flow-node.l4{ background:rgba(62,207,142,.15); border-color:rgba(62,207,142,.4); }
+  .flow-node.l5{ background:rgba(92,200,255,.15); border-color:rgba(92,200,255,.4); }
+  .flow-arrow{ flex:0 0 auto; color:var(--muted); font-size:18px; }
+
+  .layer-details{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:20px;
+  }
+  .ld-card{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:14px;
+    font-size:12.5px; line-height:1.6;
+  }
+  .ld-card .title{ font-weight:700; color:var(--accent); margin-bottom:8px; }
+  .ld-card .row{ margin:6px 0; color:var(--muted); }
+  .ld-card .row b{ color:var(--text); display:inline; }
+  .ld-card code{ background:#0f1525; padding:1px 5px; border-radius:4px; font-size:11.5px; color:#c9d4ee; }
+
+  /* === DEMO SCENARIOS === */
+  .demo-section{ margin-top:40px; }
+  .demo-section h2{ font-size:24px; margin:0 0 24px; color:var(--text); }
+  .scenario-picker{
+    display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;
+  }
+  .scenario-btn{
+    flex:1; min-width:200px; cursor:pointer;
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; text-align:center; font-weight:700; font-size:13.5px;
+    color:var(--text); transition:all .2s ease;
+  }
+  .scenario-btn:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .scenario-btn.active{
+    border-color:var(--danger); background:rgba(255,138,76,.1);
+    color:var(--danger); box-shadow:0 0 0 1px var(--danger) inset;
+  }
+
+  .demo-container{
+    display:block;
+  }
+
+  .demo-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.3);
+    display:none;
+    animation:fadeIn .3s ease-in-out;
+  }
+  .demo-card.active{
+    display:block;
+  }
+  @keyframes fadeIn{
+    from{ opacity:0; transform:translateY(10px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .demo-header{
+    padding:16px; border-bottom:1px solid var(--border);
+  }
+  .demo-header .scenario-tag{
+    display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.5px;
+    padding:3px 8px; border-radius:6px; margin-bottom:8px;
+  }
+  .tag-safe{ background:rgba(62,207,142,.15); color:var(--safe); }
+  .tag-warning{ background:rgba(245,197,66,.15); color:var(--warning); }
+  .tag-danger{ background:rgba(255,138,76,.15); color:var(--danger); }
+  .tag-forbidden{ background:rgba(255,92,92,.15); color:var(--forbidden); }
+
+  .demo-header h3{ font-size:16px; margin:0; color:var(--text); font-weight:700; }
+  .demo-header p{ font-size:12.5px; color:var(--text); margin:6px 0 0; line-height:1.5; font-weight:600; }
+
+  .demo-body{
+    padding:16px;
+  }
+
+  .layer-block{
+    background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:12px;
+    margin-bottom:12px; font-size:12px;
+    cursor:pointer; transition:all .2s ease;
+  }
+  .layer-block:hover{
+    border-color:var(--accent); background:rgba(124,158,255,.08);
+  }
+  .layer-block.expanded{ background:rgba(124,158,255,.1); border-color:var(--accent); }
+
+  .lb-header{
+    display:flex; align-items:center; gap:8px; font-weight:700; color:var(--accent);
+  }
+  .lb-num{
+    display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px;
+    border-radius:50%; font-weight:800; font-size:11px; color:#0c111c; flex:0 0 24px;
+  }
+  .lb-num-1{ background:linear-gradient(90deg,#7c9eff,#9bb4ff); }
+  .lb-num-2{ background:linear-gradient(90deg,#9b7cff,#b79cff); }
+  .lb-num-3{ background:linear-gradient(90deg,#ff8a4c,#ffb27c); }
+  .lb-num-4{ background:linear-gradient(90deg,#3ecf8e,#7fe6b8); }
+  .lb-num-5{ background:linear-gradient(90deg,#5cc8ff,#9fe0ff); }
+
+  .lb-name{ flex:1; }
+  .lb-toggle{ flex:0 0 auto; color:var(--muted); font-size:14px; transition:transform .2s ease; }
+  .layer-block.expanded .lb-toggle{ transform:rotate(180deg); }
+
+  .lb-content{
+    max-height:0; overflow:hidden; transition:max-height .3s ease;
+  }
+  .layer-block.expanded .lb-content{ max-height:1000px; }
+  .lb-content-inner{
+    padding-top:12px; border-top:1px dashed var(--border); font-size:11.5px;
+  }
+
+  .lb-row{ margin:10px 0; display:grid; grid-template-columns:100px 1fr; gap:14px; align-items:start; }
+  .lb-row .label{ color:var(--accent); font-weight:700; font-size:12px; }
+  .lb-row .value{ color:var(--text); font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:12px; line-height:1.5; }
+  .lb-row .value.flag-true{ color:var(--forbidden); font-weight:700; }
+  .lb-row .value.flag-false{ color:var(--safe); }
+  .lb-row .value.note{ font-size:11px; color:var(--muted); font-family:inherit; }
+
+  .rule-hit{
+    background:rgba(124,158,255,.06); border-left:2px solid var(--accent); padding:8px; margin:6px 0;
+    border-radius:4px; font-size:11px;
+  }
+  .rule-hit .severity{
+    display:inline-block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
+    padding:2px 6px; border-radius:4px; margin-right:6px;
+  }
+  .sev-safe{ background:rgba(62,207,142,.2); color:var(--safe); }
+  .sev-warning{ background:rgba(245,197,66,.2); color:var(--warning); }
+  .sev-danger{ background:rgba(255,138,76,.2); color:var(--danger); }
+  .sev-forbidden{ background:rgba(255,92,92,.2); color:var(--forbidden); }
+
+  .verdict-line{
+    background:rgba(92,200,255,.08); border:1px solid rgba(92,200,255,.3); border-radius:6px;
+    padding:10px; margin-top:8px; font-weight:700; font-size:12px;
+  }
+  .verdict-line.safe{ background:rgba(62,207,142,.08); border-color:rgba(62,207,142,.3); color:var(--safe); }
+  .verdict-line.warning{ background:rgba(245,197,66,.08); border-color:rgba(245,197,66,.3); color:var(--warning); }
+  .verdict-line.danger{ background:rgba(255,138,76,.08); border-color:rgba(255,138,76,.3); color:var(--danger); }
+  .verdict-line.forbidden{ background:rgba(255,92,92,.08); border-color:rgba(255,92,92,.3); color:var(--forbidden); }
+
+  .override-info{
+    background:rgba(62,207,142,.06); border:1px dashed rgba(62,207,142,.4); border-radius:6px;
+    padding:8px; margin-top:8px; font-size:11px; color:var(--muted);
+  }
+  .override-info.applied{ border-color:rgba(62,207,142,.6); color:var(--safe); background:rgba(62,207,142,.1); }
+
+  .ui-info{ background:rgba(92,200,255,.06); border-left:2px solid rgba(92,200,255,.4); padding:8px;
+    margin-top:8px; font-size:11px; color:var(--muted); border-radius:4px;
+  }
+
+  .footer{ text-align:center; color:var(--muted); font-size:12px; margin-top:40px; padding-top:20px;
+    border-top:1px dashed var(--border);
+  }
+
+  .lb-content{
+    max-height:none !important;
+    overflow:visible !important;
+  }
+  .lb-toggle{
+    display:none !important;
+  }
+  .layer-block{
+    cursor:default !important;
+  }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>Rabby Wallet — <span>5-Layer Detection Pipeline</span></h1>
+  <button id="theme-btn" onclick="toggleTheme()">Light mode</button>
+</div>
+<div class="deck" id="main">
+
+  <!-- HEADER -->
+  <header>
+    <div class="kicker">Rabby Wallet Onboarding — Risk Analysis</div>
+    <h1>5-Layer Fraud Detection Pipeline</h1>
+  </header>
+
+  <!-- ARCHITECTURE OVERVIEW -->
+  <section class="architecture">
+    <h2>Full Pipeline: From Trigger to Verdict</h2>
+    <div class="arch-flow">
+      <div class="flow-node trigger">User triggers<br>signature request</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l1">Layer 1<br>Backend Intel</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l2">Layer 2<br>Action Analysis</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l3">Layer 3<br>Rule Engine</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l4">Layer 4<br>Local Overrides</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node l5">Layer 5<br>UI Display</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node trigger">User decides</div>
+    </div>
+
+    <h3 style="font-size:14px; margin:24px 0 12px; color:var(--accent);">What each layer does — detailed breakdown</h3>
+    <div class="layer-details">
+      <div class="ld-card">
+        <div class="title">Layer 1: Backend Intelligence</div>
+        <div class="row"><b>Input:</b> Raw calldata (0x...) + sender address</div>
+        <div class="row"><b>Main job:</b> Decode and contextualize raw requests</div>
+        <div class="row"><span style="color:var(--muted); font-size:11px;">• <code>parseTx</code>: convert calldata hex → human-readable action (e.g. "swap 1 ETH for USDC", "approve 50k tokens to spender")<br>• <code>preExecTx</code>: simulate execution on-chain, show balance deltas before signing<br>• <code>addrDesc</code>: fetch metadata on contract/EOA (verified? labeled? age? scam flags?)</span></div>
+        <div class="row"><b>Output:</b> TxContext object with: decoded action, simulated state changes, address risk profile</div>
+      </div>
+      <div class="ld-card">
+        <div class="title">Layer 2: Action Analysis</div>
+        <div class="row"><b>Input:</b> TxContext from Layer 1 + on-chain lookups</div>
+        <div class="row"><b>Main job:</b> Classify request type and gather decision-relevant facts</div>
+        <div class="row"><span style="color:var(--muted); font-size:11px;">• <code>parseAction</code>: which template? (tokenApprove, swap, send, permit, buyNFT, etc.)<br>• <code>fetchActionRequiredData</code>: pull on-chain facts needed by Layer 3 rules (token prices, contract deploy date, approval history, spender risk exposure)<br>• <code>formatContext</code>: pack everything into typed ActionContext object</span></div>
+        <div class="row"><b>Output:</b> ActionContext — clean, typed object ready for rule evaluation</div>
+      </div>
+      <div class="ld-card">
+        <div class="title">Layer 3: Rule Engine</div>
+        <div class="row"><b>Input:</b> ActionContext from Layer 2</div>
+        <div class="row"><b>Main job:</b> Evaluate risk signals and assign severity</div>
+        <div class="row"><span style="color:var(--muted); font-size:11px;">• 24 action-specific rule modules (e.g. connect, send, swap, tokenApprove, nftApprove, permit2) aggregated by index.ts into ~89 distinct rule IDs (1001–1154)<br>• E.g. real tokenApprove rules: "is spender an EOA?" (1022), "spender contract deployed &lt; 3 days ago" (1024), "spender's trust value is $0 / zero risk exposure" (1150), "spender is a flagged risky contract" (1029)<br>• engine.run() runs every rule's getValue() in parallel and returns one Result per rule that crosses its threshold (level: SAFE/WARNING/DANGER/FORBIDDEN/ERROR)</span></div>
+        <div class="row"><b>Output:</b> Result[] — a flat list of triggered rules, each carrying its own id, level, value and threshold (the engine itself does not aggregate them or pick a "worst severity" — that comparison happens downstream in the wallet UI)</div>
+      </div>
+      <div class="ld-card">
+        <div class="title">Layer 4: Local User Data</div>
+        <div class="row"><b>Input:</b> Result[] from Layer 3 + user's local lists (device-only, never cloud)</div>
+        <div class="row"><b>Main job:</b> Apply on-device whitelist/blacklist overrides</div>
+        <div class="row"><span style="color:var(--muted); font-size:11px;">• originBlacklist: "block dapps from these domains"<br>• contractWhitelist: "trust these contracts, suppress low-priority warnings"<br>• addressBlacklist: "I was scammed by this address, never auto-approve"<br>• Can downgrade verdict (DANGER → SAFE) after explicit user confirmation</span></div>
+        <div class="row"><b>Output:</b> Final verdict (may suppress, downgrade, or pass through)</div>
+      </div>
+      <div class="ld-card">
+        <div class="title">Layer 5: UI Layer</div>
+        <div class="row"><b>Input:</b> Final verdict from Layer 4 + rule details</div>
+        <div class="row"><b>Main job:</b> Render verdict and control user action</div>
+        <div class="row"><span style="color:var(--muted); font-size:11px;">• SecurityListItem: show each rule as colored badge<br>• RuleDrawer: expand to see plain-language explanation + data that triggered it<br>• ProcessedRules summary: "X Safe, Y Warning, Z Danger, W Forbidden"<br>• Sign button gate: FORBIDDEN = disabled, DANGER = require modal confirm, WARNING/SAFE = normal flow</span></div>
+        <div class="row"><b>Output:</b> Approval screen user sees; controls whether Sign button is clickable</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO SCENARIOS -->
+  <section class="demo-section">
+    <h2>Three Demo Scenarios</h2>
+    <div class="scenario-picker" id="scenarioPicker"></div>
+
+    <div class="demo-container" id="demoContainer">
+
+      <!-- SCENARIO 1: PHISHING APPROVE -->
+      <div class="demo-card">
+        <div class="demo-header">
+          <span class="scenario-tag tag-forbidden">FORBIDDEN outcome</span>
+          <h3>Malicious Approve from Phishing dApp</h3>
+          <p>User is tricked into approving 50,000 USDT to a brand-new contract, via a fake dApp link.</p>
+        </div>
+        <div class="demo-body">
+
+          <!-- L1 -->
+          <div class="layer-block expanded">
+            <div class="lb-header">
+              <span class="lb-num lb-num-1">1</span>
+              <span class="lb-name">Backend Intelligence (api.rabby.io)</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Decoded &amp; contextualized:</strong>
+                <div class="lb-row">
+                  <div class="label">Action</div>
+                  <div class="value">approve(spender, amount)</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Token</div>
+                  <div class="value">USDT — 50,000 (entire balance)</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Spender</div>
+                  <div class="value flag-true">0xA11ce...DEAD (unverified)</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Deploy age</div>
+                  <div class="value flag-true">6 hours old</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Origin</div>
+                  <div class="value flag-true">rabby-airdrop-claim.xyz (unknown)</div>
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ Three immediate red flags: brand-new contract, 100% balance approval, unrecognized origin.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L2 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-2">2</span>
+              <span class="lb-name">Action Analysis</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Classified &amp; enriched:</strong>
+                <div class="lb-row">
+                  <div class="label">parseAction</div>
+                  <div class="value">tokenApprove</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Deploy days</div>
+                  <div class="value flag-true">0.25 days</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Risk exposure</div>
+                  <div class="value flag-true">98% (derived from prior victim reports)</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">isDanger</div>
+                  <div class="value flag-true">true</div>
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ Layer 2 produces a clean ActionContext object; Layer 3 will consume these exact fields.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L3 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-3">3</span>
+              <span class="lb-name">Rule Engine</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">tokenApprove rule module fires:</strong>
+                <div class="rule-hit">
+                  <span class="severity sev-forbidden">FORBIDDEN</span>
+                  <div>Contract deployed &lt; 24h ago</div>
+                </div>
+                <div class="rule-hit">
+                  <span class="severity sev-danger">DANGER</span>
+                  <div>Approval amount ≈ 100% of balance</div>
+                </div>
+                <div class="rule-hit">
+                  <span class="severity sev-danger">DANGER</span>
+                  <div>Spender risk exposure 98%</div>
+                </div>
+                <div class="rule-hit">
+                  <span class="severity sev-warning">WARNING</span>
+                  <div>Origin not in known dApp directory</div>
+                </div>
+                <div class="verdict-line forbidden">
+                  Engine verdict: FORBIDDEN (worst severity wins)
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ One FORBIDDEN hit is enough to forbid signing outright.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L4 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-4">4</span>
+              <span class="lb-name">Local User Data</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Checking whitelists &amp; blacklists:</strong>
+                <div class="override-info">
+                  <b>No override applies:</b> The spender 0xA11ce...DEAD is not on any user whitelist, and the user has not yet blacklisted it. First encounter.
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ FORBIDDEN verdict passes through untouched.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L5 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-5">5</span>
+              <span class="lb-name">UI Layer</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">User sees:</strong>
+                <div class="ui-info">
+                  <b>Sign button: DISABLED</b><br>
+                  SecurityListItem shows a red "Forbidden" badge. RuleDrawer explains each triggered rule. ProcessedRules summary: "1 Forbidden, 2 Danger, 1 Warning".
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ User cannot proceed without explicitly going to Layer 4 and whitelisting the contract (which requires multi-step confirmation).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SCENARIO 2: ADDRESS POISONING -->
+      <div class="demo-card">
+        <div class="demo-header">
+          <span class="scenario-tag tag-danger">DANGER outcome</span>
+          <h3>Address-Poisoning Lookalike Transfer</h3>
+          <p>User sends USDC to a spoofed address that looks identical to a trusted contact.</p>
+        </div>
+        <div class="demo-body">
+
+          <!-- L1 -->
+          <div class="layer-block expanded">
+            <div class="lb-header">
+              <span class="lb-num lb-num-1">1</span>
+              <span class="lb-name">Backend Intelligence (api.rabby.io)</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Decoded &amp; contextualized:</strong>
+                <div class="lb-row">
+                  <div class="label">Action</div>
+                  <div class="value">transfer(to, amount)</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Recipient</div>
+                  <div class="value">0x9F2a...8B3c</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Recipient age</div>
+                  <div class="value">2 days old, never received funds</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Amount</div>
+                  <div class="value">1,200 USDC</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Similarity</div>
+                  <div class="value flag-true">98% match with address user sent to 3 weeks ago</div>
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ The similarity comparison only works because Layer 1 has access to user's on-chain send history.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L2 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-2">2</span>
+              <span class="lb-name">Action Analysis</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Classified &amp; enriched:</strong>
+                <div class="lb-row">
+                  <div class="label">parseAction</div>
+                  <div class="value">send</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">receiverIsSpoofing</div>
+                  <div class="value flag-true">true</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">onTransferWhitelist</div>
+                  <div class="value flag-false">false (this particular address)</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">hasReceiverMnemonicInWallet</div>
+                  <div class="value flag-false">false</div>
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ The <code>receiverIsSpoofing=true</code> flag is the single most important output here.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L3 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-3">3</span>
+              <span class="lb-name">Rule Engine</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">send rule module fires:</strong>
+                <div class="rule-hit">
+                  <span class="severity sev-danger">DANGER</span>
+                  <div>Recipient is likely spoof of known contact</div>
+                </div>
+                <div class="rule-hit">
+                  <span class="severity sev-warning">WARNING</span>
+                  <div>Recipient has zero transaction history</div>
+                </div>
+                <div class="rule-hit">
+                  <span class="severity sev-safe">SAFE</span>
+                  <div>Token verified, not flagged as scam</div>
+                </div>
+                <div class="verdict-line danger">
+                  Engine verdict: DANGER (worst severity = DANGER)
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ All three rules are reported; DANGER gates a confirmation modal.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L4 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-4">4</span>
+              <span class="lb-name">Local User Data</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Checking whitelists &amp; blacklists:</strong>
+                <div class="override-info">
+                  <b>No override applies:</b> The real, trusted address (from 3 weeks ago) is on onTransferWhitelist, but this poisoned lookalike is a different address entirely. Whitelists work on exact match only.
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ This is exactly how address-poisoning attacks exploit whitelisting. DANGER verdict passes through.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L5 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-5">5</span>
+              <span class="lb-name">UI Layer</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">User sees:</strong>
+                <div class="ui-info">
+                  <b>Sign button: ENABLED but warning modal required</b><br>
+                  SecurityListItem shows an orange "Danger" badge. Spoofing rule pinned to top of RuleDrawer. User must actively confirm before proceeding.
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ DANGER is a speed bump, not a wall. Designed to stop inattentive clicks but allow deliberate actions.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SCENARIO 3: LEGIT SWAP -->
+      <div class="demo-card">
+        <div class="demo-header">
+          <span class="scenario-tag tag-warning">WARNING outcome (routine)</span>
+          <h3>Routine Swap on a Well-Known DEX</h3>
+          <p>User swaps ETH → USDC on Uniswap, a dApp they've used many times before.</p>
+        </div>
+        <div class="demo-body">
+
+          <!-- L1 -->
+          <div class="layer-block expanded">
+            <div class="lb-header">
+              <span class="lb-num lb-num-1">1</span>
+              <span class="lb-name">Backend Intelligence (api.rabby.io)</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Decoded &amp; contextualized:</strong>
+                <div class="lb-row">
+                  <div class="label">Action</div>
+                  <div class="value">swap via Uniswap Universal Router</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Contract</div>
+                  <div class="value flag-false">0x3fC9...88Ad (verified, labeled)</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Deploy age</div>
+                  <div class="value flag-false">2.1 years old, 40M+ interactions</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Balance change</div>
+                  <div class="value">−1.5 ETH / +4,820 USDC (matches quote)</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">Origin</div>
+                  <div class="value flag-false">app.uniswap.org (known registry, high community count)</div>
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ Every signal points the opposite direction from a scam: old, verified, heavily used, recognized.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L2 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-2">2</span>
+              <span class="lb-name">Action Analysis</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Classified &amp; enriched:</strong>
+                <div class="lb-row">
+                  <div class="label">parseAction</div>
+                  <div class="value">swap</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">receiveTokenIsScam</div>
+                  <div class="value flag-false">false</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">slippageTolerance</div>
+                  <div class="value">0.5%</div>
+                </div>
+                <div class="lb-row">
+                  <div class="label">usdValuePercentage</div>
+                  <div class="value">14% (small fraction of holdings)</div>
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ The 14% value percentage tells the engine this is normal trading, not a drain pattern.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L3 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-3">3</span>
+              <span class="lb-name">Rule Engine</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">swap rule module fires:</strong>
+                <div class="rule-hit">
+                  <span class="severity sev-warning">WARNING</span>
+                  <div>Slippage tolerance 0.5% — routine confirmation reminder</div>
+                </div>
+                <div class="rule-hit">
+                  <span class="severity sev-safe">SAFE</span>
+                  <div>Receive token verified, not scam or fake</div>
+                </div>
+                <div class="rule-hit">
+                  <span class="severity sev-safe">SAFE</span>
+                  <div>Swap contract long-established and verified</div>
+                </div>
+                <div class="verdict-line warning">
+                  Engine verdict: WARNING (routine case)
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ Even perfectly normal transactions surface something — this is Rabby treating "inform" and "block" as separate jobs.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L4 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-4">4</span>
+              <span class="lb-name">Local User Data</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">Checking whitelists &amp; blacklists:</strong>
+                <div class="override-info applied">
+                  <b>Override applied:</b> The Uniswap Universal Router is on this user's contractWhitelist (added after first successful swap months ago). This doesn't change the verdict — it was already SAFE — but it does suppress lower-priority notices.
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ Layer 4's clearest job: reduce noise for entities the user has already vetted.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- L5 -->
+          <div class="layer-block" onclick="this.classList.toggle('expanded')">
+            <div class="lb-header">
+              <span class="lb-num lb-num-5">5</span>
+              <span class="lb-name">UI Layer</span>
+              <span class="lb-toggle">⌄</span>
+            </div>
+            <div class="lb-content">
+              <div class="lb-content-inner">
+                <strong style="color:var(--accent);">User sees:</strong>
+                <div class="ui-info">
+                  <b>Sign button: ENABLED normally</b><br>
+                  Single yellow "Warning" badge for slippage reminder. ProcessedRules shows "2 Safe, 1 Warning, 0 Danger, 0 Forbidden". User signs normally.
+                </div>
+                <div class="lb-row" style="margin-top:10px;">
+                  <div class="label"></div>
+                  <div class="value note">→ A clean ProcessedRules dominated by SAFE — even with a routine WARNING — is "system working as intended, nothing to escalate".</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- FOOTER -->
+
+</div>
+
+<script>
+const SCENARIOS = [
+  {
+    id: 'phishing-approve',
+    tag: 'forbidden',
+    label: 'FORBIDDEN outcome — Malicious Approve',
+    cardId: 'scenario-1'
+  },
+  {
+    id: 'address-poisoning',
+    tag: 'danger',
+    label: 'DANGER outcome — Address Poisoning',
+    cardId: 'scenario-2'
+  },
+  {
+    id: 'legit-swap',
+    tag: 'warning',
+    label: 'WARNING outcome (routine) — Legit Swap',
+    cardId: 'scenario-3'
+  }
+];
+
+const picker = document.getElementById('scenarioPicker');
+const container = document.getElementById('demoContainer');
+
+function initScenarios() {
+  // Create buttons
+  SCENARIOS.forEach((sc, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'scenario-btn' + (idx === 0 ? ' active' : '');
+    btn.textContent = sc.label;
+    btn.onclick = () => selectScenario(sc.id);
+    picker.appendChild(btn);
+  });
+
+  // Move demo-card divs into container and set up
+  const allCards = document.querySelectorAll('.demo-card');
+  allCards.forEach((card, idx) => {
+    card.id = SCENARIOS[idx].cardId;
+    if (idx === 0) {
+      card.classList.add('active');
+    }
+    container.appendChild(card);
+  });
+}
+
+function selectScenario(scId) {
+  // Update buttons
+  document.querySelectorAll('.scenario-btn').forEach((btn, idx) => {
+    btn.classList.toggle('active', SCENARIOS[idx].id === scId);
+  });
+
+  // Update cards
+  SCENARIOS.forEach(sc => {
+    const card = document.getElementById(sc.cardId);
+    card.classList.toggle('active', sc.id === scId);
+  });
+
+  // Scroll to demo section smoothly
+  setTimeout(() => {
+    const section = document.querySelector('.demo-section');
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initScenarios);
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('theme-btn');
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = 'Dark mode';
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = 'Light mode';
+  }
+}
+</script>
+<script src="rabby_sidebar.js" defer></script>
+
+</body>
+</html>

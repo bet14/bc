@@ -1,0 +1,97 @@
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: #f4f7f5;
+  color: #17221e;
+}
+
+.react-app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+header,
+article,
+form,
+section {
+  border: 1px solid #dce6e1;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  background: #12805c;
+  color: white;
+  padding: 0 18px;
+  font-weight: 800;
+}
+
+.cards,
+.grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+input,
+select {
+  min-height: 40px;
+  border: 1px solid #dce6e1;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+article span {
+  display: block;
+  color: #64736c;
+  margin-bottom: 8px;
+}
+
+article strong {
+  word-break: break-word;
+}
+
+@media (max-width: 760px) {
+  header,
+  .grid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}

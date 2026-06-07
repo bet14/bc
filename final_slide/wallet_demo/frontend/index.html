@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ChainShield Wallet Security Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <section class="login-screen" id="loginScreen">
+      <div class="login-copy">
+        <div class="brand">
+          <div class="brand-mark">CS</div>
+          <div>
+            <strong>ChainShield</strong>
+            <span>Rabby-inspired wallet security</span>
+          </div>
+        </div>
+        <h1>Protect every wallet action before you sign.</h1>
+        <p>Simulate transactions, detect suspicious addresses, review approvals, parse signatures, and hide phishing activity.</p>
+      </div>
+      <form class="login-card" id="loginForm">
+        <p class="eyebrow">Customer wallet login</p>
+        <h2 id="authTitle">Sign in</h2>
+        <div class="auth-extra hidden" id="signupFields">
+          <label>Full Name<input id="fullName" autocomplete="name" placeholder="Aditya Sharma" /></label>
+          <label>Confirm Password<input id="confirmPassword" type="password" placeholder="Confirm password" /></label>
+        </div>
+        <label>Email<input id="email" type="email" autocomplete="email" placeholder="demo@chainshield.local" /></label>
+        <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Password" /></label>
+        <div class="auth-extra hidden" id="forgotFields">
+          <p class="subtle">Enter your account email and ChainShield will simulate a reset link request.</p>
+        </div>
+        <button class="primary-button" id="authSubmit" type="submit">Login</button>
+        <button class="ghost-button" id="demoLogin" type="button">Demo Account</button>
+        <p class="subtle"><button class="text-button" id="forgotLink" type="button">Forgot Password?</button></p>
+        <p class="subtle" id="authSwitchText">New here? <button class="text-button" id="signupLink" type="button">Sign Up</button></p>
+        <p class="message" id="loginMessage"></p>
+      </form>
+    </section>
+
+    <div class="app hidden" id="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">CS</div>
+          <div>
+            <strong>ChainShield</strong>
+            <span>Wallet Security</span>
+          </div>
+        </div>
+        <nav>
+          <a href="#wallet" class="active">Wallet</a>
+          <a href="#simulation">Simulation</a>
+          <a href="#phishing">Phishing Detection</a>
+          <a href="#approvals">Approval Alerts</a>
+          <a href="#poisoning">Address Poisoning</a>
+          <a href="#signatures">Signature Parsing</a>
+          <a href="#activity">Activity Log</a>
+          <a href="#security">Security Center</a>
+          <a href="#settings">Settings</a>
+          <a href="#profile">Profile</a>
+        </nav>
+        <button class="ghost-button" id="presentationMode" type="button">Presentation Mode</button>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Customer wallet dashboard</p>
+            <h1>ChainShield Wallet</h1>
+          </div>
+          <div class="top-actions">
+            <button class="status-pill menu-trigger" id="walletMenuButton" type="button">Wallet Disconnected</button>
+            <span class="status-pill" id="networkStatus">Network --</span>
+            <button class="ghost-button" id="themeToggle" type="button">Light Mode</button>
+            <button class="ghost-button profile-button menu-trigger" id="profileButton" type="button">AD</button>
+            <button class="primary-button" id="connectWallet" type="button">Connect Wallet</button>
+          </div>
+          <div class="wallet-menu hidden" id="walletMenu">
+            <button data-target="profile" type="button">Profile</button>
+            <button data-target="settings" type="button">Settings</button>
+            <button data-target="activity" type="button">Activity Log</button>
+            <button id="disconnectWallet" type="button">Disconnect Wallet</button>
+          </div>
+        </header>
+
+        <section class="wallet-grid" id="wallet">
+          <article class="card wide">
+            <span>Wallet Address</span>
+            <strong id="walletAddress">Not Connected</strong>
+            <p id="walletSummary">Connect a wallet to activate ChainShield monitoring.</p>
+          </article>
+          <article class="card">
+            <span>Wallet Balance</span>
+            <strong id="walletBalance">--</strong>
+            <p id="balanceText">Waiting for wallet connection</p>
+          </article>
+          <article class="card">
+            <span>Security Score</span>
+            <strong id="securityScore">--</strong>
+            <p id="securityText">Connect wallet to calculate score.</p>
+          </article>
+          <article class="card">
+            <span>Active Warnings</span>
+            <strong id="activeWarnings">--</strong>
+            <p>Customer-visible warnings only</p>
+          </article>
+        </section>
+
+        <section class="card" id="alertsSection">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Security alerts</p>
+              <h2>Warnings</h2>
+            </div>
+          </div>
+          <div class="alert-list" id="alertList"></div>
+        </section>
+
+        <section class="workspace" id="simulation">
+          <div class="card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Transaction simulation</p>
+                <h2>Pre-sign check</h2>
+              </div>
+              <span class="badge safe" id="addressReputation">Trusted</span>
+            </div>
+            <form id="transactionForm" class="form-grid">
+              <label>Destination Address<input id="destination" value="0x82F1a3A87C8f69b105D6C20B89F8D2e4753E24c1" /></label>
+              <div class="form-row">
+                <label>Amount<input id="amount" type="number" min="0" step="0.001" value="0.15" /></label>
+                <label>Token<select id="token"><option>ETH</option><option>USDT</option><option>USDC</option><option>AIRDROP</option></select></label>
+              </div>
+              <div class="form-row">
+                <label>Address Type<select id="addressType"><option value="trusted">Trusted</option><option value="unknown">Unknown</option><option value="suspicious">Suspicious</option><option value="scam">Scam</option></select></label>
+                <label>Approval<select id="approvalType"><option value="none">No Approval</option><option value="limited">Limited</option><option value="unlimited">Unlimited</option></select></label>
+              </div>
+              <button class="primary-button full" type="submit">Submit Transaction</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Simulation result</p>
+                <h2 id="statusText">Safe</h2>
+              </div>
+              <div class="score-ring" id="scoreRing"><span id="riskScore">15</span></div>
+            </div>
+            <div class="preview-grid">
+              <span>You Send</span><strong id="sendPreview">0.15 ETH</strong>
+              <span>To</span><strong id="toPreview">0x82F1...24c1</strong>
+              <span>Address Reputation</span><strong id="reputationPreview">Trusted</strong>
+              <span>Result</span><strong id="resultPreview">Safe To Proceed</strong>
+              <span>Recommendation</span><strong id="recommendationPreview">Safe to proceed.</strong>
+            </div>
+            <div class="risk-breakdown">
+              <h3>Risk Score Breakdown</h3>
+              <div><span>Amount Risk</span><strong id="amountRisk">5</strong></div>
+              <div><span>Address Risk</span><strong id="addressRisk">0</strong></div>
+              <div><span>Approval Risk</span><strong id="approvalRisk">0</strong></div>
+              <div><span>Total Risk</span><strong id="totalRisk">15</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" id="demo">
+          <p class="eyebrow">Demo mode</p>
+          <h2>Professor Demo Scenarios</h2>
+          <div class="scenario-grid">
+            <button class="scenario safe" data-scenario="low" type="button">Low Risk Scenario</button>
+            <button class="scenario medium" data-scenario="medium" type="button">Medium Risk Scenario</button>
+            <button class="scenario high" data-scenario="high" type="button">High Risk Scenario</button>
+            <button class="scenario medium" data-scenario="phishing" type="button">Phishing Address Scenario</button>
+            <button class="scenario high" data-scenario="approval" type="button">Unlimited Approval Scenario</button>
+            <button class="scenario high" data-scenario="scam" type="button">Scam Transaction Scenario</button>
+          </div>
+        </section>
+
+        <section class="card" id="phishing">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Phishing detection</p>
+              <h2>Suspicious Addresses</h2>
+            </div>
+            <label class="toggle"><input id="hidePhishing" type="checkbox" /> Hide Phishing Addresses</label>
+          </div>
+          <p class="success-text" id="phishingHiddenText"></p>
+          <div class="table-list" id="phishingList"></div>
+        </section>
+
+        <section class="card" id="approvals">
+          <p class="eyebrow">Approval alerts</p>
+          <h2>Smart Contract Approvals</h2>
+          <div class="approval-grid" id="approvalGrid"></div>
+        </section>
+
+        <section class="card" id="poisoning">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Address poisoning protection</p>
+              <h2>Look-alike transaction history</h2>
+            </div>
+            <label class="toggle"><input id="hidePoisoning" type="checkbox" /> Hide scam entries</label>
+          </div>
+          <p>Address poisoning occurs when scammers send tiny transactions from addresses that look similar to trusted addresses.</p>
+          <p class="success-text" id="poisoningHiddenText"></p>
+          <div class="table-list" id="poisoningList"></div>
+        </section>
+
+        <section class="card" id="signatures">
+          <p class="eyebrow">Signature parsing protection</p>
+          <h2>NFT Sale Signature Warning</h2>
+          <div class="signature-warning">
+            <span class="badge high">High Risk</span>
+            <p>This signature could list your NFT for sale at zero price.</p>
+            <div class="preview-grid">
+              <span>Asset At Risk</span><strong>BAYC #1234</strong>
+              <span>Potential Loss</span><strong>1 NFT</strong>
+              <span>Risk</span><strong>High</strong>
+              <span>Description</span><strong>Blind signature asks for NFT sale authority.</strong>
+            </div>
+            <div class="actions">
+              <button class="danger-button" id="rejectSignature" type="button">Reject Signature</button>
+              <button class="ghost-button" id="continueSignature" type="button">Continue</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="security-grid" id="security">
+          <article class="card"><span>Security Score</span><strong id="centerScore">82</strong></article>
+          <article class="card"><span>Active Threats</span><strong id="centerThreats">1</strong></article>
+          <article class="card"><span>Risky Approvals</span><strong id="centerApprovals">2</strong></article>
+          <article class="card"><span>Hidden Scam Transactions</span><strong id="centerHidden">0</strong></article>
+          <article class="card wide">
+            <span>Security Score Breakdown</span>
+            <div class="risk-breakdown compact-breakdown">
+              <div><span>Transaction Risk</span><strong id="centerTransactionRisk">15</strong></div>
+              <div><span>Approval Risk</span><strong id="centerApprovalRisk">0</strong></div>
+              <div><span>Address Risk</span><strong id="centerAddressRisk">0</strong></div>
+              <div><span>Signature Risk</span><strong id="centerSignatureRisk">72</strong></div>
+            </div>
+          </article>
+          <article class="card wide">
+            <span>Recommendations</span>
+            <ul id="recommendations"></ul>
+          </article>
+        </section>
+
+        <section class="card" id="activity">
+          <p class="eyebrow">Activity center</p>
+          <h2>Activity Log</h2>
+          <div class="table-list" id="activityList"></div>
+        </section>
+
+        <section class="card" id="settings">
+          <p class="eyebrow">User settings</p>
+          <h2>Protection Settings</h2>
+          <div class="settings-grid">
+            <label><input id="settingApproval" type="checkbox" checked /> Unlimited Approval Warnings</label>
+            <label><input id="settingReputation" type="checkbox" checked /> Contract Reputation Checks</label>
+            <label><input id="settingPoisoning" type="checkbox" checked /> Address Poisoning Protection</label>
+            <label><input id="settingSignature" type="checkbox" checked /> Signature Parsing Protection</label>
+            <label><input id="settingPhishing" type="checkbox" checked /> Phishing Detection</label>
+          </div>
+          <button class="primary-button" id="saveSettings" type="button">Save Settings</button>
+        </section>
+
+        <section class="card" id="profile">
+          <p class="eyebrow">User profile</p>
+          <h2>Profile Management</h2>
+          <form class="form-grid" id="profileForm">
+            <label>Name<input id="profileName" /></label>
+            <label>Email<input id="profileEmail" type="email" /></label>
+            <label>Wallet Nickname<input id="walletNickname" placeholder="Main wallet" /></label>
+            <label>Profile Picture URL<input id="profilePicture" placeholder="https://..." /></label>
+            <button class="primary-button" type="submit">Save Profile</button>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal hidden" id="simulationModal">
+      <div class="modal-card">
+        <span class="badge high" id="modalBadge">Warning</span>
+        <h2>Transaction Preview</h2>
+        <div class="preview-grid">
+          <span>Date</span><strong id="modalDate">--</strong>
+          <span>Time</span><strong id="modalTime">--</strong>
+          <span>Transaction ID</span><strong id="modalTxId">--</strong>
+          <span>You Send</span><strong id="modalSend">1 ETH</strong>
+          <span>Destination</span><strong id="modalTo">0x1234...</strong>
+          <span>Risk Score</span><strong id="modalScore">92</strong>
+          <span>Address Reputation</span><strong id="modalReputation">Suspicious</strong>
+          <span>Recommendation</span><strong id="modalRecommendation">Abort transaction.</strong>
+        </div>
+        <p id="modalMessage">Potential phishing detected.</p>
+        <div class="actions">
+          <button class="danger-button" id="abortTransaction" type="button">Abort Transaction</button>
+          <button class="ghost-button" id="continueTransaction" type="button">Continue Anyway</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hidden" id="reviewModal">
+      <div class="modal-card">
+        <span class="badge medium">Approval Review</span>
+        <h2 id="reviewTitle">Contract Review</h2>
+        <div class="preview-grid">
+          <span>Contract</span><strong id="reviewContract">AIRDROP</strong>
+          <span>Approval</span><strong id="reviewAmount">Unlimited</strong>
+          <span>Approval Type</span><strong id="reviewType">Unlimited</strong>
+          <span>Risk</span><strong id="reviewRisk">High</strong>
+        </div>
+        <p id="reviewRecommendation">Recommendation: Revoke immediately.</p>
+        <button class="primary-button full close-review" type="button">Close</button>
+      </div>
+    </div>
+
+    <div class="toast hidden" id="toast">Action completed</div>
+    <script src="./app.js"></script>
+  </body>
+</html>
