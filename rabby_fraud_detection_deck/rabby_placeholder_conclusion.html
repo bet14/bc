@@ -6,12 +6,10 @@
 <title>Rabby Wallet — Conclusion</title>
 <link rel="stylesheet" href="rabby_sidebar.css">
 <style>
-:root, [data-theme="dark"] {
-  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+[data-theme="dark"] {
   --bg: #0f1117; --bg2: #181b24; --bg3: #1e2130;
   --border: #2a2d3e; --text: #e2e8f0; --text-muted: #8892a4;
   --accent: #6c8ef7; --accent2: #a78bfa;
-  --radius: 10px; --transition: 0.25s ease;
 }
 [data-theme="light"] {
   --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
@@ -19,7 +17,7 @@
   --accent: #4361ee; --accent2: #7c3aed;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.65; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.7; }
 #topbar {
   position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
   background: var(--bg2); border-bottom: 1px solid var(--border);
@@ -30,30 +28,36 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 #theme-btn {
   background: var(--bg3); border: 1px solid var(--border); color: var(--text);
   padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
-  transition: background var(--transition);
+  transition: background 0.25s ease;
 }
 #theme-btn:hover { background: var(--border); }
-#main { margin-top: 52px; padding: 32px 40px 80px; max-width: 1180px; margin-left: auto; margin-right: auto; }
-h1 {
+#main { margin-top: 84px; padding: 0 40px 80px; max-width: 1100px; margin-left: auto; margin-right: auto; }
+.kicker { color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+h1.title {
   font-size: 30px; margin: 0 0 6px; letter-spacing: .2px;
   background: linear-gradient(90deg, var(--accent), var(--accent2));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.kicker { color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
-.subtitle { color: var(--text-muted); font-size: 15px; margin: 0 0 22px; max-width: 760px; }
-.slide {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 40px 36px; margin-bottom: 28px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
-  text-align: center;
+.subtitle { color: var(--text-muted); font-size: 15px; margin: 0 0 28px; max-width: 760px; }
+.takeaway {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 22px 26px; margin-bottom: 16px; display: flex; gap: 18px; align-items: flex-start;
 }
-.soon-badge {
-  display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .5px;
-  text-transform: uppercase; padding: 5px 14px; border-radius: 999px; margin-bottom: 18px;
-  background: rgba(108,142,247,.12); color: var(--accent); border: 1px solid rgba(108,142,247,.35);
+.takeaway .num {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; font-weight: 700; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
 }
-.slide h2 { font-size: 20px; margin-bottom: 10px; color: var(--text); }
-.slide p { color: var(--text-muted); font-size: 14px; max-width: 620px; margin: 0 auto; line-height: 1.7; }
-.footer-tag { color: var(--text-muted); font-size: 12px; text-align: center; margin-top: 8px; }
+.takeaway p { color: var(--text-muted); font-size: 14.5px; }
+.takeaway p strong { color: var(--text); }
+.takeaway.lead { border-color: var(--accent); background: rgba(108, 142, 247, 0.08); }
+.highlight {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-weight: 800;
+}
+.footer-tag { color: var(--text-muted); font-size: 12px; text-align: center; margin-top: 28px; }
 </style>
 </head>
 <body>
@@ -63,16 +67,40 @@ h1 {
 </div>
 <div id="main">
   <div class="kicker">Fraud Detection Features</div>
-  <h1>Conclusion</h1>
+  <h1 class="title">Conclusion</h1>
   <p class="subtitle">Key takeaways from researching Rabby's fraud-detection architecture, and what they suggest about the direction of wallet security overall.</p>
 
-  <div class="slide">
-    <div class="soon-badge">Coming soon</div>
-    <h2>This deep-dive session is in progress</h2>
-    <p>This session will summarize the strongest design choices found across the 5-layer pipeline, rule engine, and feature-level protections, plus open questions for further research.</p>
+  <div class="takeaway lead">
+    <div class="num">1</div>
+    <p><span class="highlight">Multi-layered defense is essential.</span> No single check catches all attacks. Rabby's combination of site-level, transaction-level, and signature-level checks provides defense in depth.</p>
   </div>
 
-  <div class="footer-tag">Placeholder page — will be replaced with a full research session</div>
+  <div class="takeaway">
+    <div class="num">2</div>
+    <p><strong>Pre-sign simulation is the most impactful security feature.</strong> By showing users what will happen before they sign, Rabby prevents the majority of scams that rely on user confusion about transaction effects.</p>
+  </div>
+
+  <div class="takeaway">
+    <div class="num">3</div>
+    <p><strong>Address poisoning is a growing threat.</strong> Rabby is one of the few wallets that actively filters poisoned transaction records, a defense that academic research has specifically highlighted as effective.</p>
+  </div>
+
+  <div class="takeaway">
+    <div class="num">4</div>
+    <p><strong>Signature parsing closes the "What I Sign vs What I See" gap.</strong> Many attacks use off-chain signatures. Rabby decodes these into plain language so users understand what permissions they're granting.</p>
+  </div>
+
+  <div class="takeaway">
+    <div class="num">5</div>
+    <p><strong>Open source enables community verification.</strong> Rabby's code is publicly auditable, meaning security researchers can verify its protection claims and report vulnerabilities through responsible disclosure.</p>
+  </div>
+
+  <div class="takeaway">
+    <div class="num">6</div>
+    <p><strong>User education remains critical.</strong> Even the best security tools cannot protect users who override all warnings. Understanding why warnings appear helps users make better decisions.</p>
+  </div>
+
+  <div class="footer-tag">Research based on analysis of Rabby's open-source repository and recent academic papers on crypto wallet security</div>
 </div>
 <script>
 function toggleTheme() {
