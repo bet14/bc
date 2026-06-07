@@ -12,13 +12,14 @@
       { label: 'Rules Engine', href: 'rabby_rule_engine_with_demo.html' }
     ]},
     { group: 'Core Features', items: [
+      { label: 'Pre-Sign Transaction Simulation', href: 'rabby_placeholder_tx_simulation.html', soon: true },
       { label: 'Approval Risk Alerts', href: 'rabby_approval_alerts_feature.html' },
       { label: 'Phishing & Malicious Site Detection', href: 'rabby_placeholder_phishing_detection.html', soon: true },
-      { label: 'Pre-Sign Transaction Simulation', href: 'rabby_placeholder_tx_simulation.html', soon: true },
-      { label: 'Address & Contract Risk Labels', href: 'rabby_placeholder_address_labels.html', soon: true },
+      { label: 'Address Poisoning Filtering', href: 'rabby_placeholder_address_labels.html', soon: true },
       { label: 'Signature Risk Explanations', href: 'rabby_placeholder_signature_risk.html' }
     ]},
     { label: 'Wallet Comparison', href: 'rabby_placeholder_wallet_comparison.html', soon: true },
+    { label: 'Proof of Concept', href: 'rabby_placeholder_proof_of_concept.html', soon: true },
     { label: 'Conclusion', href: 'rabby_placeholder_conclusion.html', soon: true },
     { label: 'References', href: 'rabby_placeholder_references.html', soon: true }
   ];
