@@ -122,45 +122,27 @@
     }
     .flow-steps {
       display: flex;
-      align-items: stretch;
+      align-items: center;
       justify-content: center;
-      gap: 8px;
-      flex-wrap: nowrap;
+      gap: 20px;
+      flex-wrap: wrap;
       margin: 30px 0;
-      width: 100%;
     }
     .flow-node {
-      padding: 10px 8px;
+      padding: 16px 24px;
       background: var(--bg3);
       border: 2px solid var(--accent);
       border-radius: 10px;
-      font-size: 0.7rem;
+      font-size: 0.95rem;
       font-weight: 600;
       color: var(--accent2);
-      flex: 1 1 0;
-      min-width: 0;
+      min-width: 160px;
       text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      line-height: 1.3;
-    }
-    .flow-sub {
-      display: block;
-      font-size: 0.62rem;
-      font-weight: 500;
-      color: var(--text-muted);
-      word-break: break-word;
     }
     .flow-arrow {
-      font-size: 1.1rem;
+      font-size: 1.6rem;
       color: var(--accent);
       font-weight: 700;
-      flex: 0 0 auto;
-      display: flex;
-      align-items: center;
     }
     /* Threat Cards */
     .threat-grid {
@@ -398,6 +380,13 @@
       .section-title {
         font-size: 1.4rem;
       }
+      .flow-steps {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .flow-arrow {
+        transform: rotate(90deg);
+      }
       .scenario-grid {
         grid-template-columns: 1fr;
       }
@@ -452,16 +441,14 @@
       <div class="flow-diagram">
         <h3 style="color: var(--text); margin-bottom: 30px;">Processing Pipeline</h3>
         <div class="flow-steps">
-          <div class="flow-node">DApp Request<br><span class="flow-sub">eth_signTypedData</span></div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node">EIP-712 Field Filter<br><span class="flow-sub">parseSignTypedDataMessage</span></div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node">Backend Decode<br><span class="flow-sub">parseTypedData + rabby-action</span></div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node">Action Renderer<br><span class="flow-sub">Permit / Permit2 / ContractCall</span></div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node">Security Engine<br><span class="flow-sub">rule IDs, Level/threshold</span></div>
-          <div class="flow-arrow">→</div>
+          <div class="flow-node">DApp Request</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">Receive Signature Request</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">Parse Message Data</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">Human-Readable Explanation</div>
+          <div class="flow-arrow">↓</div>
           <div class="flow-node">User Reviews & Signs</div>
         </div>
       </div>
@@ -485,15 +472,15 @@
         </div>
         <div class="info-card">
           <h3>Recipient Verification</h3>
-          <p>Shows the spender/recipient address and lets the user check it against known contract and address risk data surfaced by Rabby's risk scoring (shared with the address-risk feature, not duplicated logic).</p>
+          <p>Shows recipient addresses and cross-references them against known malicious address databases.</p>
         </div>
         <div class="info-card">
           <h3>Permission Highlights</h3>
-          <p>Flags unusual permissions for Permit / Permit2 typed-data requests, including unlimited token approvals and delegation to unfamiliar spenders.</p>
+          <p>Flags unusual permissions, including unlimited approvals and suspicious delegation requests.</p>
         </div>
         <div class="info-card">
-          <h3>Spender Risk Scoring</h3>
-          <p>Security-engine rules score the spender contract on concrete signals: whether it is an EOA (rule 1077 / 1071), whether its trust value / risk exposure is $0 — a phishing indicator (rule 1148 / 1149), and whether it was deployed too recently (rule 1079 / 1073). This is metadata-based scoring, not source-code analysis.</p>
+          <h3>Contract Intelligence</h3>
+          <p>Analyzes contract source code and behavior patterns to detect potentially dangerous operations.</p>
         </div>
       </div>
     </div>
@@ -510,27 +497,27 @@
             <h3>❌ Without Signature Parsing</h3>
           </div>
           <div class="scenario-content">
-            <p><strong>What the user sees (raw EIP-712 typed-data request):</strong></p>
-            <div class="code-block">{ "primaryType": "Permit",<br>&nbsp;&nbsp;"message": { "owner": "0xabc...123",<br>&nbsp;&nbsp;"spender": "0x9f1...e02",<br>&nbsp;&nbsp;"value": "115792089237316195423570985008687907853269984665640564039457584007913129639935",<br>&nbsp;&nbsp;"nonce": 0, "deadline": 1999999999 } }</div>
+            <p><strong>What the user sees:</strong></p>
+            <div class="code-block">0xa9059cbb000000000000000000000000<br>1234567890abcdef1234567890ab<br>cdef000000000000000000000064</div>
             <p style="margin-top: 16px;"><strong>User's understanding:</strong></p>
-            <p>User cannot tell this is an unlimited-allowance approval to an unfamiliar spender — it just looks like a generic signing prompt.</p>
-            <p style="margin-top: 16px;"><strong>Outcome:</strong> High risk of granting unlimited token spending rights to a malicious or phishing contract.</p>
+            <p>User cannot understand the request. Risk of authorizing unknown actions.</p>
+            <p style="margin-top: 16px;"><strong>Outcome:</strong> High risk of accidental signature. Vulnerable to phishing attacks.</p>
             <div class="result-badge" style="background: rgba(255, 107, 107, 0.15); border-color: rgba(255, 107, 107, 0.3); color: #ff6b6b; margin-top: 16px;">High Risk</div>
           </div>
         </div>
 
         <!-- Scenario 2: With Rabby Signature Parsing -->
-        <div class="scenario-card" style="border: 1px solid #51cf66;">
-          <div class="scenario-header" style="background: rgba(81, 207, 102, 0.12); border-bottom: 1px solid #51cf66;">
-            <h3 style="color: #51cf66;">✓ With Rabby Signature Parsing</h3>
+        <div class="scenario-card">
+          <div class="scenario-header">
+            <h3>✓ With Rabby Signature Parsing</h3>
           </div>
           <div class="scenario-content">
-            <p style="color: #51cf66;"><strong>What the user sees (parsed via openapi.parseTypedData → rabby-action → Permit renderer):</strong></p>
-            <div class="code-block" style="color: #51cf66; border-color: #51cf66;">Approve token: USDT<br>Amount: Unlimited<br>Spender: 0x9f1...e02 (EOA — not a contract)<br>⚠ Spender trust value: $0</div>
-            <p style="margin-top: 16px; color: #51cf66;"><strong>User's understanding:</strong></p>
-            <p style="color: #51cf66;">Clear view of what is being approved, to whom, and why the security engine is raising rules 1077/1148 (EOA spender, $0 trust value).</p>
-            <p style="margin-top: 16px; color: #51cf66;"><strong>Outcome:</strong> User can reject or scope down the approval before signing.</p>
-            <div class="result-badge" style="background: rgba(81, 207, 102, 0.15); border-color: rgba(81, 207, 102, 0.3); color: #51cf66; margin-top: 16px; font-weight: 700;">Verified & Flagged</div>
+            <p><strong>What the user sees:</strong></p>
+            <div class="code-block">Transfer 100 USDT<br>To: 0x1234...abcd<br>Network: Ethereum</div>
+            <p style="margin-top: 16px;"><strong>User's understanding:</strong></p>
+            <p>Clear understanding of the action being authorized. Can verify the recipient address.</p>
+            <p style="margin-top: 16px;"><strong>Outcome:</strong> User makes informed decision. Signature is intentional and verified.</p>
+            <div class="result-badge" style="background: rgba(81, 207, 102, 0.15); border-color: rgba(81, 207, 102, 0.3); color: #51cf66; margin-top: 16px;">Verified & Safe</div>
           </div>
         </div>
       </div>
@@ -538,43 +525,53 @@
 
     <!-- Threats Detected -->
     <div class="content-section">
-      <h2 class="section-title">Signing-Specific Threats</h2>
-      <p style="text-align: center; color: var(--text-muted); margin-bottom: 30px; max-width: 800px; margin-left:auto; margin-right:auto;">
-        These are the threats that specifically arise at the <em>signing</em> step (EIP-712 / personal_sign), as opposed to general transaction or address risks — which are covered in their own pages of this deck (see the cross-reference note below).
-      </p>
+      <h2 class="section-title">Threats Detected by Signature Parsing</h2>
 
       <div class="threat-grid">
         <div class="threat-card">
-          <div class="threat-icon">👁️</div>
-          <h3>Blind Signing</h3>
-          <p>Wallets that show only a raw hash or hex blob force users to sign without knowing what they're authorizing. Rabby decodes the EIP-712 message so the request is never opaque.</p>
+          <div class="threat-icon">🔓</div>
+          <h3>Hidden Token Transfers</h3>
+          <p>Malicious DApps may hide transfer requests within complex function calls. Rabby extracts and displays these transfers clearly.</p>
         </div>
 
         <div class="threat-card">
           <div class="threat-icon">∞</div>
-          <h3>Unlimited Permit / Permit2 Approvals</h3>
-          <p>Permit and Permit2 typed-data signatures can grant unlimited token allowances without an on-chain transaction. Rabby's Permit/Permit2 renderers surface the exact amount and trigger security-engine rules 1077/1071 (EOA spender) and 1148/1149 ($0 trust value).</p>
+          <h3>Unlimited Token Approvals</h3>
+          <p>Attackers request permission to spend all user tokens. Rabby highlights unlimited approvals and suggests safer alternatives.</p>
         </div>
 
         <div class="threat-card">
-          <div class="threat-icon">🎭</div>
-          <h3>primaryType / Schema Spoofing</h3>
-          <p>A malicious dApp can craft an EIP-712 payload whose <code>primaryType</code> and field names look like a familiar, safe schema while the underlying spender or value differs. Rabby's typed-data action parsing renders the actual decoded fields rather than trusting the dApp's labels.</p>
+          <div class="threat-icon">⚙️</div>
+          <h3>Fake Contract Interactions</h3>
+          <p>Unknown smart contracts may request dangerous actions. Rabby analyzes contract code and flags suspicious behavior patterns.</p>
         </div>
 
         <div class="threat-card">
           <div class="threat-icon">🎣</div>
-          <h3>Phishing Signature Requests</h3>
-          <p>Users are lured into signing messages (e.g. fake "claim" or "verify wallet" prompts) that actually authorize asset transfer or approval. Decoding the real action — not the dApp's description of it — exposes these attempts.</p>
+          <h3>Phishing Signatures</h3>
+          <p>Users are tricked into signing messages that authorize asset theft. Rabby's clear formatting makes phishing attempts obvious.</p>
+        </div>
+
+        <div class="threat-card">
+          <div class="threat-icon">👤</div>
+          <h3>Address Spoofing</h3>
+          <p>Attackers use lookalike addresses or typosquatting. Rabby compares addresses against known legitimate contracts.</p>
+        </div>
+
+        <div class="threat-card">
+          <div class="threat-icon">🚨</div>
+          <h3>Unusual Permissions</h3>
+          <p>Requests for excessive permissions beyond the operation's scope. Rabby flags permission levels that exceed normal usage patterns.</p>
         </div>
       </div>
 
       <div class="warning-list">
-        <h4>Signals the Security Engine Surfaces During Signing</h4>
-        <p>Spender address is an Externally Owned Account (EOA) — rule 1077 / 1071</p>
-        <p>Spender contract trust value / risk exposure is $0 (phishing indicator) — rule 1148 / 1149</p>
-        <p>Spender contract was deployed too recently — rule 1079 / 1073</p>
-        <p>Unlimited token allowance requested via Permit / Permit2</p>
+        <h4>Rabby's Warning System</h4>
+        <p>Suspicious contract detected</p>
+        <p>Unlimited approval requested</p>
+        <p>Unknown destination address</p>
+        <p>Contract not verified on blockchain explorer</p>
+        <p>Recipient address flagged as risky</p>
       </div>
     </div>
 

@@ -16,7 +16,7 @@
       { label: 'Phishing & Malicious Site Detection', href: 'rabby_placeholder_phishing_detection.html', soon: true },
       { label: 'Pre-Sign Transaction Simulation', href: 'rabby_placeholder_tx_simulation.html', soon: true },
       { label: 'Address & Contract Risk Labels', href: 'rabby_placeholder_address_labels.html', soon: true },
-      { label: 'Signature Risk Explanations', href: 'rabby_placeholder_signature_risk.html', soon: true }
+      { label: 'Signature Risk Explanations', href: 'rabby_placeholder_signature_risk.html' }
     ]},
     { label: 'Wallet Comparison', href: 'rabby_placeholder_wallet_comparison.html', soon: true },
     { label: 'Conclusion', href: 'rabby_placeholder_conclusion.html', soon: true },
