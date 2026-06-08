@@ -379,6 +379,14 @@ td.id{
   font-size: 11px;
   font-weight: 700;
 }
+.scenario-btn .sc-situation {
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-align: left;
+}
 .scenario-btn.active {
   border-width: 2px;
 }
@@ -914,27 +922,35 @@ const RULE_DEFS = [
 // ── PRESET SCENARIOS ───────────────────────────────────────────────────────
 const SCENARIOS = [
   { key: 'sce1', label: 'Sce 1', tag: 'FORBIDDEN', cls: 'sc-forbidden',
+    situation: 'An EOA you\'ve personally blacklisted asks for an unlimited approval on a brand-new, zero-trust contract.',
     params: { amount: 3, age: 0, spender: 'eoa', status: 'black', trust: 'zero', apiError: false },
     note: 'Blacklisted spender stacked with several other red flags — FORBIDDEN wins the priority reduction regardless of how many other rules also fire.' },
   { key: 'sce2', label: 'Sce 2', tag: 'FORBIDDEN', cls: 'sc-forbidden',
+    situation: 'A 3-year-old contract with high DeBank trust requests a small approval — but it sits on your personal blacklist.',
     params: { amount: 1, age: 3, spender: 'contract', status: 'black', trust: 'high', apiError: false },
     note: 'Otherwise "clean-looking" transaction (old contract, modest amount, high trust) — but the address is on your personal blacklist, so rule 1134 alone forces a hard block.' },
   { key: 'sce3', label: 'Sce 3', tag: 'DANGER', cls: 'sc-danger',
+    situation: 'A moderately-aged, low-trust contract requesting a small approval turns out to match Rabby\'s global scam-address database.',
     params: { amount: 1, age: 2, spender: 'contract', status: 'scam', trust: 'low', apiError: false },
     note: 'Address matches Rabby\'s global scam database (rule 1029) — a single DANGER signal is enough to set the overall verdict to DANGER.' },
   { key: 'sce4', label: 'Sce 4', tag: 'DANGER', cls: 'sc-danger',
+    situation: 'An EOA spender with unknown reputation asks for an unlimited approval on a one-day-old, zero-trust contract.',
     params: { amount: 3, age: 1, spender: 'eoa', status: 'unknown', trust: 'zero', apiError: false },
     note: 'Classic malicious-approval pattern: EOA spender (1022) requesting an unlimited amount (1039), on a brand-new, zero-trust contract (1024, 1150). Two DANGER + two WARNING hits collapse to overall DANGER.' },
   { key: 'sce5', label: 'Sce 5', tag: 'WARNING', cls: 'sc-warning',
+    situation: 'A brand-new contract with $0 DeBank trust and unknown reputation requests a moderately large approval.',
     params: { amount: 2, age: 0, spender: 'contract', status: 'unknown', trust: 'zero', apiError: false },
     note: 'No DANGER-level signals — but the contract is brand new (1024) and has $0 trust on DeBank (1150). Two WARNINGs, no worse — overall WARNING.' },
   { key: 'sce6', label: 'Sce 6', tag: 'WARNING', cls: 'sc-warning',
+    situation: 'A two-day-old contract with low (but non-zero) trust and unknown reputation requests a small, ordinary-looking approval.',
     params: { amount: 1, age: 1, spender: 'contract', status: 'unknown', trust: 'low', apiError: false },
     note: 'Only one soft signal fires — the contract is just 2 days old (1024). Everything else looks normal, so the overall verdict stays at the lightest non-clean level, WARNING.' },
   { key: 'sce7', label: 'Sce 7', tag: 'SAFE', cls: 'sc-safe',
+    situation: 'A long-established, high-trust contract on your personal whitelist requests a tiny approval amount.',
     params: { amount: 0, age: 3, spender: 'contract', status: 'white', trust: 'high', apiError: false },
     note: 'Small approval, long-established contract, high DeBank trust, and — the deciding factor — the contract is on your personal whitelist (1133). Engine reports SAFE.' },
   { key: 'sce8', label: 'Sce 8', tag: 'ERROR', cls: 'sc-error',
+    situation: 'A small approval on an old, unremarkable contract looks routine, but the DeBank trust-value lookup times out mid-check.',
     params: { amount: 0, age: 3, spender: 'contract', status: 'unknown', trust: 'zero', apiError: true },
     note: 'The transaction itself looks unremarkable, but the DeBank trust-value API call times out mid-evaluation. The engine catches the exception and reports rule 1150 as ERROR rather than silently skipping it — "unknown", not "safe".' },
 ];
@@ -960,6 +976,7 @@ function buildScenarioButtons() {
     <button class="scenario-btn ${s.cls}" id="scbtn-${s.key}" onclick="loadScenario('${s.key}')">
       <div class="sc-name">${s.label}</div>
       <span class="sc-tag">${s.tag}</span>
+      <div class="sc-situation">${s.situation}</div>
     </button>`).join('');
 }
 

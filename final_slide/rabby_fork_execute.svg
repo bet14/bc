@@ -1,0 +1,68 @@
+<svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .fork-bg { fill: #1e2130; }
+      .fork-text { fill: #e2e8f0; font-family: Segoe UI, sans-serif; }
+      .fork-label { fill: #8892a4; font-size: 12px; }
+      .fork-title { fill: #6c8ef7; font-size: 14px; font-weight: 700; }
+      .fork-arrow { stroke: #2a2d3e; stroke-width: 2; fill: none; }
+      .fork-node { fill: #0f1117; stroke: #2a2d3e; stroke-width: 1.5; }
+      .fork-highlight { fill: #a78bfa; }
+    </style>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="25" class="fork-title" text-anchor="middle">Fork &amp; Execute Model</text>
+
+  <!-- Current State -->
+  <rect x="50" y="70" width="140" height="80" class="fork-node" rx="8"/>
+  <text x="120" y="90" class="fork-text" text-anchor="middle" font-weight="600" font-size="13">Current Chain</text>
+  <text x="120" y="110" class="fork-label" text-anchor="middle" font-size="11">State at Block N</text>
+  <text x="120" y="130" class="fork-label" text-anchor="middle" font-size="11">User balances</text>
+  <text x="120" y="145" class="fork-label" text-anchor="middle" font-size="11">Contract state</text>
+
+  <!-- Arrow 1 -->
+  <path d="M 190 110 L 230 110" class="fork-arrow" marker-end="url(#arrowhead)"/>
+  <text x="210" y="105" class="fork-label" text-anchor="middle" font-size="11">fork()</text>
+
+  <!-- Fork Copy -->
+  <rect x="230" y="70" width="140" height="80" class="fork-node" rx="8" opacity="0.7"/>
+  <text x="300" y="90" class="fork-text" text-anchor="middle" font-weight="600" font-size="13" opacity="0.8">Forked State</text>
+  <text x="300" y="110" class="fork-label" text-anchor="middle" font-size="11" opacity="0.8">(Isolated copy)</text>
+  <text x="300" y="130" class="fork-label" text-anchor="middle" font-size="11" opacity="0.8">Safe to mutate</text>
+
+  <!-- Arrow 2 -->
+  <path d="M 370 110 L 410 110" class="fork-arrow" marker-end="url(#arrowhead)"/>
+  <text x="390" y="105" class="fork-label" text-anchor="middle" font-size="11">tx</text>
+
+  <!-- Execute -->
+  <rect x="410" y="70" width="140" height="80" class="fork-node" rx="8"/>
+  <rect x="415" y="75" width="130" height="70" class="fork-highlight" fill="none" stroke="#a78bfa" stroke-width="2" rx="6"/>
+  <text x="480" y="90" class="fork-text" text-anchor="middle" font-weight="600" font-size="13">Execute</text>
+  <text x="480" y="110" class="fork-label" text-anchor="middle" font-size="11">Run transaction</text>
+  <text x="480" y="130" class="fork-label" text-anchor="middle" font-size="11">State changes</text>
+  <text x="480" y="145" class="fork-label" text-anchor="middle" font-size="11">on fork only</text>
+
+  <!-- Arrow 3 -->
+  <path d="M 550 110 L 590 110" class="fork-arrow" marker-end="url(#arrowhead)"/>
+  <text x="570" y="105" class="fork-label" text-anchor="middle" font-size="11">diff</text>
+
+  <!-- Result -->
+  <rect x="590" y="70" width="150" height="80" class="fork-node" rx="8"/>
+  <text x="665" y="90" class="fork-text" text-anchor="middle" font-weight="600" font-size="13">Forecast Result</text>
+  <text x="665" y="110" class="fork-label" text-anchor="middle" font-size="11">Balance change</text>
+  <text x="665" y="130" class="fork-label" text-anchor="middle" font-size="11">Gas used</text>
+  <text x="665" y="145" class="fork-label" text-anchor="middle" font-size="11">Success/Revert</text>
+
+  <!-- Live chain note -->
+  <rect x="50" y="180" width="690" height="60" fill="#0f1117" stroke="#2a2d3e" stroke-width="1" rx="6" opacity="0.6"/>
+  <text x="60" y="200" class="fork-text" font-weight="600" font-size="12">Live chain remains untouched</text>
+  <text x="60" y="220" class="fork-label" font-size="11">Real transaction only executes if user signs. Forecast shows what will happen, not what has happened.</text>
+
+  <!-- Arrow marker -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#2a2d3e"/>
+    </marker>
+  </defs>
+</svg>

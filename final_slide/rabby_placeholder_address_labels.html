@@ -205,7 +205,11 @@ ul.feature-list b { color: var(--text); }
 <div id="main">
   <div class="kicker">Fraud Detection Features</div>
   <h1>Address Poisoning &amp; Contract Risk Labels</h1>
-  <p class="subtitle"><b style="color:var(--text);">Two related defenses</b> sit on the "who am I sending to / who is asking me to sign" side of Rabby: filtering poisoned-lookalike transfers out of transaction history, and surfacing plain-language risk labels — scam address, contract type, exchange-deposit mismatch — the moment an address is typed into a send flow.</p>
+  <p class="subtitle">Rabby uses <b style="color:var(--text);">two related protections</b> to verify who's receiving the transaction:</p>
+  <ul class="feature-list">
+    <li><b>Removes lookalike transfers</b> from transaction history</li>
+    <li><b>Shows risk labels</b> (scam address, contract type mismatch) instantly when an address is entered</li>
+  </ul>
   <div class="callout" style="margin-top:-6px;">
     <div class="callout-title">In short</div>
     One defense cleans up what the sender already sees (history). The other warns the sender before a new address is even used (send flow). Both reuse the same backend signals and the same five-layer pipeline — just triggered earlier than a normal sign-request check.
@@ -367,6 +371,7 @@ ul.feature-list b { color: var(--text); }
     <div class="callout" style="margin-top:18px;">
       <div class="callout-title">Scenario: a poisoned lookalike sits in the sender's history</div>
       <p style="margin-bottom:10px;">A sender opens their transaction list to copy a contact's address from a transfer made three weeks ago. Sitting just above it is a near-zero transfer from an address differing by two characters — planted to be copied by mistake.</p>
+      <img src="https://pbs.twimg.com/media/FmQnpVfWQAEMW9Z.jpg" alt="Address poisoning attack example" style="width:100%; max-width:600px; border-radius:8px; margin:14px 0; border:1px solid var(--border);">
       <div class="pipeline">
         <div class="pnode"><b>L1 — already judged it</b>The planted transfer was evaluated when history synced and came back marked as scam.</div>
         <div class="arrow">→</div>

@@ -121,6 +121,14 @@ ul.feature-list b { color: var(--text); }
   <h1>Signature Parsing</h1>
   <p class="subtitle">Raw signature requests — permit, permit2, typed data — arrive as hex blobs that mean nothing to a person. Rabby decodes them into a plain-language statement of what is actually being authorized, who would receive that authorization, and what the security engine thinks of that recipient, before any signature is produced.</p>
 
+  <div style="margin: 28px 0;">
+    <img src="https://pbs.twimg.com/media/FocdgLWXsAEh6i0?format=jpg&name=900x900" alt="Signature Parsing Example" style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px;">
+    <div class="callout">
+      <div class="callout-title">Why this matters</div>
+      <p style="color:var(--text-muted);font-size:13.5px;margin:0;">Rabby allows a holder to closely examine what is being signed and reduce the risk of falling victim to scams. By decoding and displaying the actual parameters of a signature request, the wallet empowers informed decision-making before any authorization is committed to the blockchain.</p>
+    </div>
+  </div>
+
   <!-- SECTION 1: definition / why -->
   <div class="slide">
     <h2>1. Why raw signatures need parsing</h2>

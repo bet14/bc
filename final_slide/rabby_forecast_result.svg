@@ -1,0 +1,111 @@
+<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .result-bg { fill: #0f1117; }
+      .result-card { fill: #1e2130; stroke: #2a2d3e; stroke-width: 1; }
+      .result-text { fill: #e2e8f0; font-family: Segoe UI, sans-serif; }
+      .result-label { fill: #8892a4; font-size: 12px; }
+      .result-title { fill: #6c8ef7; font-size: 13px; font-weight: 700; }
+      .result-good { fill: #34d399; }
+      .result-bad { fill: #f87171; }
+      .result-warn { fill: #fbbf24; }
+      .section-label { fill: #a78bfa; font-size: 14px; font-weight: 700; }
+    </style>
+  </defs>
+
+  <!-- Main title -->
+  <text x="400" y="25" class="section-label" text-anchor="middle">What the Holder Sees — Forecast Result</text>
+
+  <!-- Asset Changes -->
+  <rect x="30" y="45" width="230" height="320" class="result-card" rx="8"/>
+  <text x="50" y="70" class="result-title">Asset Changes</text>
+
+  <!-- USDC out -->
+  <rect x="45" y="85" width="200" height="40" fill="#0f1117" stroke="#f87171" stroke-width="1.5" rx="4"/>
+  <text x="55" y="105" class="result-text" font-weight="600">USDC</text>
+  <text x="185" y="105" class="result-bad" font-weight="700" text-anchor="end">−1,000</text>
+  <text x="55" y="120" class="result-label" font-size="11">(≈ −$1,000)</text>
+
+  <!-- NFT out -->
+  <rect x="45" y="130" width="200" height="40" fill="#0f1117" stroke="#f87171" stroke-width="1.5" rx="4"/>
+  <text x="55" y="150" class="result-text" font-weight="600">Bored Ape #1234</text>
+  <text x="185" y="150" class="result-bad" font-weight="700" text-anchor="end">↔ NFT out</text>
+
+  <!-- ETH in -->
+  <rect x="45" y="175" width="200" height="40" fill="#0f1117" stroke="#34d399" stroke-width="1.5" rx="4"/>
+  <text x="55" y="195" class="result-text" font-weight="600">ETH</text>
+  <text x="185" y="195" class="result-good" font-weight="700" text-anchor="end">+0.5 ETH</text>
+  <text x="55" y="210" class="result-label" font-size="11">(≈ +$1,750)</text>
+
+  <!-- Net change -->
+  <rect x="45" y="220" width="200" height="40" fill="#0f1117" stroke="#fbbf24" stroke-width="1.5" rx="4"/>
+  <text x="55" y="240" class="result-text" font-weight="600">Net change</text>
+  <text x="185" y="240" class="result-warn" font-weight="700" text-anchor="end">Large outflow</text>
+
+  <!-- Gas -->
+  <rect x="45" y="265" width="200" height="35" fill="#0f1117" stroke="#fbbf24" stroke-width="1.5" rx="4"/>
+  <text x="55" y="283" class="result-text" font-weight="600">Gas estimate</text>
+  <text x="185" y="283" class="result-warn" font-weight="700" text-anchor="end">Unusually high</text>
+
+  <!-- Decoded Action -->
+  <rect x="30" y="310" width="230" height="55" fill="#1e2130" stroke="#2a2d3e" stroke-width="1" rx="6"/>
+  <text x="50" y="330" class="result-title" font-size="12">Decoded Action</text>
+  <text x="50" y="350" class="result-label" font-size="11">Contract call → internal</text>
+  <text x="50" y="365" class="result-label" font-size="11">transferFrom on 2 assets</text>
+
+  <!-- Gas & Success -->
+  <rect x="280" y="45" width="230" height="100" class="result-card" rx="8"/>
+  <text x="300" y="70" class="result-title">Execution Status</text>
+
+  <rect x="295" y="80" width="200" height="30" fill="#0f1117" stroke="#34d399" stroke-width="1.5" rx="4"/>
+  <text x="305" y="100" class="result-good" font-weight="700">✓ Success</text>
+  <text x="495" y="100" class="result-label" text-anchor="end" font-size="11">pre_exec.success = true</text>
+
+  <!-- Gas Details -->
+  <rect x="295" y="115" width="200" height="30" fill="#0f1117" rx="4"/>
+  <text x="305" y="125" class="result-text" font-size="12">Gas used: 145,230</text>
+  <text x="305" y="138" class="result-label" font-size="11">Limit: 200,000</text>
+
+  <!-- Decision helper -->
+  <rect x="280" y="155" width="230" height="210" class="result-card" rx="8"/>
+  <text x="300" y="180" class="result-title">Decision Info</text>
+
+  <rect x="295" y="195" width="200" height="25" fill="#0f1117" rx="3"/>
+  <text x="305" y="213" class="result-text" font-size="12">Calldata claim reads:</text>
+  <text x="305" y="230" class="result-label" font-size="11">"claimRewards()"</text>
+
+  <rect x="295" y="250" width="200" height="25" fill="#0f1117" rx="3"/>
+  <text x="305" y="268" class="result-text" font-size="12">Actual execution:</text>
+  <text x="305" y="285" class="result-label" font-size="11">Drain $1K + steal NFT</text>
+
+  <rect x="295" y="305" width="200" height="50" fill="rgba(248, 113, 113, 0.1)" stroke="#f87171" stroke-width="1.5" rx="4"/>
+  <text x="305" y="325" class="result-bad" font-weight="700" font-size="12">⚠ MISMATCH DETECTED</text>
+  <text x="305" y="345" class="result-bad" font-size="11">Calldata ≠ actual effect</text>
+
+  <!-- Decision panel -->
+  <rect x="530" y="45" width="240" height="320" class="result-card" rx="8"/>
+  <text x="550" y="70" class="result-title">User Decision</text>
+
+  <rect x="545" y="85" width="210" height="95" fill="rgba(39, 193, 147, 0.1)" stroke="#34d399" stroke-width="1.5" rx="6"/>
+  <text x="555" y="110" class="result-text" font-weight="600" font-size="13">✓ Informed Choice</text>
+  <text x="555" y="130" class="result-label" font-size="11">Holder can see the exact</text>
+  <text x="555" y="145" class="result-label" font-size="11">financial impact before</text>
+  <text x="555" y="160" class="result-label" font-size="11">signing, not guessing</text>
+  <text x="555" y="175" class="result-label" font-size="11">from raw calldata</text>
+
+  <!-- Risk flags -->
+  <rect x="545" y="190" width="210" height="70" fill="rgba(248, 113, 113, 0.08)" stroke="#f87171" stroke-width="1" rx="6"/>
+  <text x="555" y="210" class="result-text" font-weight="600" font-size="12">Flags raised:</text>
+  <text x="565" y="228" class="result-label" font-size="11">• Unexpected asset loss</text>
+  <text x="565" y="243" class="result-label" font-size="11">• Contract behavior mismatch</text>
+
+  <!-- Action buttons -->
+  <rect x="545" y="275" width="100" height="35" fill="#34d399" rx="6"/>
+  <text x="595" y="298" class="result-text" text-anchor="middle" font-weight="700" font-size="12">Decline</text>
+
+  <rect x="655" y="275" width="100" height="35" fill="rgba(108, 142, 247, 0.2)" stroke="#6c8ef7" stroke-width="1.5" rx="6"/>
+  <text x="705" y="298" class="result-text" text-anchor="middle" font-weight="700" font-size="12" opacity="0.5">Sign (blocked)</text>
+
+  <text x="550" y="335" class="result-label" font-size="11">Sign button disabled</text>
+  <text x="550" y="350" class="result-label" font-size="11">until holder reviews</text>
+</svg>
